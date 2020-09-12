@@ -24,6 +24,14 @@ discordQueue.on('idle', () => {
   count = 0
 })
 
+setInterval(async () => {
+  try {
+
+  } catch (err) {
+    
+  }
+})
+
 async function getBadResponseError (res: Response, payload: EnqueuePayloadType) {
   const { article, feed } = payload
   try {
@@ -36,6 +44,7 @@ async function getBadResponseError (res: Response, payload: EnqueuePayloadType) 
 
 export async function enqueue (payload: EnqueuePayloadType, redisCache: RedisCache) {
   try {
+    await redisCache.enqueuePayload(payload)
     const res = await discordQueue.add(() => executeFetch(payload))
     if (res.ok) {
       return

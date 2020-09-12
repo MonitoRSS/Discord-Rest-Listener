@@ -19,45 +19,68 @@ class RedisCache extends EventEmitter {
     return `${this.prefix}payload_data`
   }
 
+  get payloadProcessingQueueKey () {
+    return `${this.prefix}payload_processing_queue`
+  }
+
   get payloadQueueKey () {
     return `${this.prefix}payload_queue`
   }
 
+  getPayloadElementKey (payload: EnqueuePayloadType) {
+    const { feed, article } = payload
+    return `${this.prefix}${feed.channel}_${article._id}`
+  }
+
   /**
    * Enqueue a payload within redis to be later dequeued
-   * on a timer
+   * on a timer.
    */
   async enqueuePayload (payload: EnqueuePayloadType) {
-    const { article, feed } = payload
     const data = JSON.stringify(payload)
-    const dataKey = `${this.prefix}${feed.channel}_${article._id}`
+    const dataKey = this.getPayloadElementKey(payload)
     await new Promise((resolve, reject) => {
       this.client.multi()
         .hset(this.payloadHashKey, dataKey, data)
         .rpush(this.payloadQueueKey, dataKey)
+        .rpush(this.payloadProcessingQueueKey, dataKey)
         .exec((err) => err ? reject(err) : resolve())
     })
   }
 
   /**
-   * Dequeue and return a payload
+   * Dequeue and return a payload from the processing queue.
+   * Don't delete the hash until the payload is completed
    */
   async dequeuePayload () {
     const lpop = promisify(this.client.lpop).bind(this.client)
-    const dequeuedDataKey = await lpop(this.payloadQueueKey)
+    const dequeuedDataKey = await lpop(this.payloadProcessingQueueKey)
     if (!dequeuedDataKey) {
       return null
     }
     const payloadData = await new Promise<string|null>((resolve, reject) => {
       this.client.multi()
         .hget(this.payloadHashKey, dequeuedDataKey)
-        .hdel(this.payloadHashKey, dequeuedDataKey)
         .exec((err, results) => err ? reject(err) : resolve(results[0]))
     })
     if (!payloadData) {
       return null
     }
     return JSON.parse(payloadData)
+  }
+
+  /**
+   * Complete a payload and purge its data from Redis.
+   * This is called after a payload has finished processing.
+   */
+  async completePayload (payload: EnqueuePayloadType) {
+    const dataKey = this.getPayloadElementKey(payload)
+    await new Promise<string|null>((resolve, reject) => {
+      this.client.multi()
+        .hdel(this.payloadHashKey, dataKey)
+        .lrem(this.payloadQueueKey, 1, dataKey)
+        .exec((err, results) => err ? reject(err) : resolve(results[0]))
+    })
   }
 }
 
