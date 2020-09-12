@@ -4,7 +4,7 @@ import log from './utils/log'
 import { enqueue, validatePayload } from './services/Queue'
 import RedisCache from './services/RedisCache'
 
-const redisCache = new RedisCache()
+const redisCache = new RedisCache(config.redis, config.redisPrefix)
 
 async function createConsumer () {
   const sock = new Pull()

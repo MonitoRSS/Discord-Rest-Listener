@@ -1,9 +1,10 @@
 import RedisCache from './RedisCache'
 import {promisify} from 'util'
 import { EnqueuePayloadType } from '../schemas/EnqueuePayloadSchema'
+import config from '../utils/config'
 
 describe('RedisCache', () => {
-  const cache = new RedisCache()
+  const cache = new RedisCache(config.redis, config.redisPrefix)
   const lindex = promisify(cache.client.lindex).bind(cache.client)
   const hget = promisify(cache.client.hget).bind(cache.client)
   beforeAll(() => {
@@ -14,8 +15,8 @@ describe('RedisCache', () => {
   afterEach(async () => {
     await new Promise((resolve, reject) => {
       cache.client.multi()
-        .del(RedisCache.payloadHashKey)
-        .del(RedisCache.payloadQueueKey)
+        .del(cache.payloadHashKey)
+        .del(cache.payloadQueueKey)
         .exec((err) => err ? reject(err) : resolve())
     })
   })
@@ -37,10 +38,10 @@ describe('RedisCache', () => {
       }
       await cache.enqueuePayload(payload)
 
-      const storedKey = `${RedisCache.prefix}${payload.feed.channel}_${payload.article._id}`
-      await expect(lindex(RedisCache.payloadQueueKey, 0)).resolves
+      const storedKey = `${cache.prefix}${payload.feed.channel}_${payload.article._id}`
+      await expect(lindex(cache.payloadQueueKey, 0)).resolves
         .toEqual(storedKey)
-      await expect(hget(RedisCache.payloadHashKey, storedKey)).resolves
+      await expect(hget(cache.payloadHashKey, storedKey)).resolves
         .toEqual(JSON.stringify(payload))
     })
   })
@@ -60,19 +61,19 @@ describe('RedisCache', () => {
           url: 'b',
         }
       }
-      const storedKey = `${RedisCache.prefix}${payload.feed.channel}_${payload.article._id}`
+      const storedKey = `${cache.prefix}${payload.feed.channel}_${payload.article._id}`
       await new Promise((resolve, reject) => {
         cache.client.multi()
-          .hset(RedisCache.payloadHashKey, storedKey, JSON.stringify(payload))
-          .rpush(RedisCache.payloadQueueKey, storedKey)
+          .hset(cache.payloadHashKey, storedKey, JSON.stringify(payload))
+          .rpush(cache.payloadQueueKey, storedKey)
           .exec((err) => err ? reject(err) : resolve())
       })
       const dequeued = await cache.dequeuePayload()
       expect(dequeued).not.toEqual(null)
       expect(JSON.stringify(dequeued)).toEqual(JSON.stringify(payload))
-      await expect(lindex(RedisCache.payloadQueueKey, 0)).resolves
+      await expect(lindex(cache.payloadQueueKey, 0)).resolves
         .toEqual(null)
-      await expect(hget(RedisCache.payloadHashKey, storedKey)).resolves
+      await expect(hget(cache.payloadHashKey, storedKey)).resolves
         .toEqual(null)
       await expect(cache.dequeuePayload()).resolves
         .toEqual(null)
