@@ -9,7 +9,7 @@ let count = 0
 // Maximum of 10 requests every 1 second
 const discordQueue = new PQueue({
   interval: 1000,
-  intervalCap: 10
+  intervalCap: 10,
 })
 
 discordQueue.on('active', () => {
@@ -22,14 +22,6 @@ discordQueue.on('active', () => {
 discordQueue.on('idle', () => {
   log.info('Queue finished all tasks')
   count = 0
-})
-
-setInterval(async () => {
-  try {
-
-  } catch (err) {
-    
-  }
 })
 
 async function getBadResponseError (res: Response, payload: EnqueuePayloadType) {
@@ -46,6 +38,7 @@ export async function enqueue (payload: EnqueuePayloadType, redisCache: RedisCac
   try {
     await redisCache.enqueuePayload(payload)
     const res = await discordQueue.add(() => executeFetch(payload))
+    await redisCache.completePayload(payload)
     if (res.ok) {
       return
     }
@@ -54,6 +47,14 @@ export async function enqueue (payload: EnqueuePayloadType, redisCache: RedisCac
   } catch (err) {
     // Network error, put it in the service backlog
     log.error(`Network error (${err.message})`)
+  }
+}
+
+export async function enqueueOldPayloads (redisCache: RedisCache) {
+  const payloads = await redisCache.getEnqueuedPayloads()
+  for (let i = 0; i < payloads.length; ++i) {
+    const payload = payloads[i]
+    enqueue(payload, redisCache)
   }
 }
 

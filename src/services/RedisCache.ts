@@ -33,6 +33,23 @@ class RedisCache extends EventEmitter {
   }
 
   /**
+   * Get all payloads that are still enqueud
+   */
+  async getEnqueuedPayloads () {
+    const lrange = promisify(this.client.lrange).bind(this.client)
+    const keys = await lrange(this.payloadQueueKey, 0, -1)
+    const multi = this.client.multi()
+    // Reverse order since 0 to -1 is reversed
+    for (let i = keys.length - 1; i >= 0; --i) {
+      const key = keys[i]
+      multi.hget(this.payloadHashKey, key)
+    }
+    return new Promise<EnqueuePayloadType[]>((resolve, reject) => {
+      multi.exec((err, data) => err ? reject(err) : resolve(data))
+    })
+  }
+
+  /**
    * Enqueue a payload within redis to be later dequeued
    * on a timer.
    */
@@ -52,21 +69,29 @@ class RedisCache extends EventEmitter {
    * Dequeue and return a payload from the processing queue.
    * Don't delete the hash until the payload is completed
    */
-  async dequeuePayload () {
-    const lpop = promisify(this.client.lpop).bind(this.client)
-    const dequeuedDataKey = await lpop(this.payloadProcessingQueueKey)
-    if (!dequeuedDataKey) {
-      return null
-    }
-    const payloadData = await new Promise<string|null>((resolve, reject) => {
-      this.client.multi()
-        .hget(this.payloadHashKey, dequeuedDataKey)
-        .exec((err, results) => err ? reject(err) : resolve(results[0]))
+  async dequeuePayloads (count = 1) {
+    // Get payload keys
+    const poppedPayloadKeys = await new Promise<string[]>((resolve, reject) => {
+      const popMulti = this.client.multi()
+      for (let i = 0; i < count; ++i) {
+        popMulti.lpop(this.payloadProcessingQueueKey)
+      }
+      popMulti.exec((err, results) => err ? reject(err) : resolve(results))
     })
-    if (!payloadData) {
-      return null
-    }
-    return JSON.parse(payloadData)
+    const filteredKeys = poppedPayloadKeys.filter((key) => key)
+    // Get the data associated with each payload key
+    const payloadData = await new Promise<string[]>((resolve, reject) => {
+      const multi = this.client.multi()
+      for (let i = 0; i < filteredKeys.length; ++i) {
+        multi.hget(this.payloadHashKey, filteredKeys[i])
+      }
+      multi.exec((err, results) => err ? reject(err) : resolve(results))
+    })
+    // Convert the data to JSON
+    const filteredPaylods = payloadData
+      .filter((str) => str)
+      .map((data) => JSON.parse(data))
+    return filteredPaylods
   }
 
   /**

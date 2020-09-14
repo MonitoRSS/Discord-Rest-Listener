@@ -61,29 +61,76 @@ describe('RedisCache', () => {
       })
     })
     it('returns the dequeued item', async () => {
-      const dequeued = await cache.dequeuePayload()
-      expect(JSON.stringify(dequeued)).toEqual(payloadJSON)
+      const dequeued = await cache.dequeuePayloads(1)
+      expect(dequeued.length).toEqual(1)
+      expect(JSON.stringify(dequeued[0])).toEqual(payloadJSON)
       await expect(hget(cache.payloadHashKey, payloadKey)).resolves
         .toEqual(payloadJSON)
-      await expect(cache.dequeuePayload()).resolves
-        .toEqual(null)
+      await expect(cache.dequeuePayloads()).resolves
+        .toEqual([])
     })
     it('does not delete the hash', async () => {
-      const dequeued = await cache.dequeuePayload()
-      expect(JSON.stringify(dequeued)).toEqual(payloadJSON)
+      const dequeued = await cache.dequeuePayloads(1)
+      expect(JSON.stringify(dequeued[0])).toEqual(payloadJSON)
       await expect(hget(cache.payloadHashKey, payloadKey)).resolves
         .toEqual(payloadJSON)
     })
     it('only dequeues from the processing queue', async () => {
-      const dequeued = await cache.dequeuePayload()
-      expect(JSON.stringify(dequeued)).toEqual(payloadJSON)
+      await cache.dequeuePayloads(1)
       await expect(lindex(cache.payloadQueueKey, 0)).resolves
         .toEqual(payloadKey)
       await expect(lindex(cache.payloadProcessingQueueKey, 0)).resolves
         .toEqual(null)
     })
+    it('works with dequeuing multiple items', async () => {
+      const payload2: EnqueuePayloadType = {
+        ...payload,
+        article: {
+          _id: 'payloadarticle2'
+        },
+        feed: {
+          ...payload.feed,
+          channel: 'payloadchannel2',
+        }
+      }
+      const payload2Key = cache.getPayloadElementKey(payload2)
+      const payload2JSON = JSON.stringify(payload2)
+      const payload3: EnqueuePayloadType = {
+        ...payload,
+        article: {
+          _id: 'payloadarticle3'
+        },
+        feed: {
+          ...payload.feed,
+          channel: 'payloadchannel3',
+        }
+      }
+      const payload3Key = cache.getPayloadElementKey(payload3)
+      const payload3JSON = JSON.stringify(payload3)
+      await new Promise((resolve, reject) => {
+        cache.client.multi()
+          .hset(cache.payloadHashKey, payload2Key, payload2JSON)
+          .rpush(cache.payloadQueueKey, payload2Key)
+          .rpush(cache.payloadProcessingQueueKey, payload2Key)
+          .exec((err) => err ? reject(err) : resolve())
+      })
+      await new Promise((resolve, reject) => {
+        cache.client.multi()
+          .hset(cache.payloadHashKey, payload3Key, payload3JSON)
+          .rpush(cache.payloadQueueKey, payload3Key)
+          .rpush(cache.payloadProcessingQueueKey, payload3Key)
+          .exec((err) => err ? reject(err) : resolve())
+      })
+      const dequeued = await cache.dequeuePayloads(3)
+      expect(dequeued.length).toEqual(3)
+      expect(JSON.stringify(dequeued[0])).toEqual(payloadJSON)
+      expect(JSON.stringify(dequeued[1])).toEqual(payload2JSON)
+      expect(JSON.stringify(dequeued[2])).toEqual(payload3JSON)
+      await expect(cache.dequeuePayloads()).resolves
+        .toEqual([])
+    })
   })
-  describe('completePayload', async () => {
+  describe('completePayload', () => {
     beforeEach(async () => {
       await new Promise((resolve, reject) => {
         cache.client.multi()
@@ -99,5 +146,17 @@ describe('RedisCache', () => {
       await expect(lindex(cache.payloadQueueKey, 0)).resolves
         .toEqual(null)
     })
+  })
+  afterAll(async () => {
+    return new Promise((resolve, reject) => {
+      cache.client.quit((err) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve()
+        }
+      })
+    })
+    
   })
 })
