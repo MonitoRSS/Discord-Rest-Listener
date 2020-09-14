@@ -24,3 +24,5 @@ export function executeFetch(payload: EnqueuePayloadType) {
     body: JSON.stringify(body)
   })
 }
+
+export const DiscordRESTHandler = handler
