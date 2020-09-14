@@ -1,10 +1,12 @@
 import { Response } from 'node-fetch'
 import PQueue from 'p-queue'
 import { EnqueuePayloadSchema, EnqueuePayloadType } from '../schemas/EnqueuePayloadSchema'
+import ExtendableTimer from '../utils/ExtendableTimer'
 import log from '../utils/log'
 import { executeFetch } from './DiscordRequests'
 import RedisCache from './RedisCache'
 let count = 0
+const startTimer: ExtendableTimer = new ExtendableTimer(() => discordQueue.start())
 
 // Maximum of 10 requests every 1 second
 const discordQueue = new PQueue({
@@ -66,4 +68,9 @@ export function validatePayload (payload: EnqueuePayloadType) {
     log.error(`Invalid payload\n${JSON.stringify(payload, null, 2)}\n${result.error.message}`)
     return false
   }
+}
+
+export function delayQueueBy (time: number) {
+  discordQueue.pause()
+  startTimer.resetWith(time)
 }

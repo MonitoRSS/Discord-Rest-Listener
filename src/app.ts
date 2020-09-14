@@ -1,8 +1,9 @@
 import { Pull } from 'zeromq'
 import config from './utils/config'
 import log from './utils/log'
-import { enqueue, enqueueOldPayloads, validatePayload } from './services/Queue'
+import { delayQueueBy, enqueue, enqueueOldPayloads, validatePayload } from './services/Queue'
 import RedisCache from './services/RedisCache'
+import { DiscordRESTHandler } from './services/DiscordRequests'
 
 const redisCache = new RedisCache(config.redis, config.redisPrefix)
 
@@ -40,4 +41,10 @@ connectToRedis().then(() => {
 })
 .catch((err) => {
   log.error(err)
+})
+
+// Delay the payload queue whenever a global rate limit is hit
+DiscordRESTHandler.on('globalRateLimit', (_, blockedDurationMs) => {
+  // Delay the queue by 2x the blocked duration from discord for safety
+  delayQueueBy(blockedDurationMs * 2)
 })
