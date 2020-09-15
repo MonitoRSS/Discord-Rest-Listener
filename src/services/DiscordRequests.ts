@@ -12,6 +12,9 @@ handler.on('rateLimit', (apiRequest, durationMs) => {
   log.error(`Rate limit hit for ${apiRequest.toString()} (retry after ${durationMs})ms`)
 })
 
+/**
+ * Executes the Discord API request using payload details
+ */
 export function executeFetch(payload: EnqueuePayloadType) {
   const { method, body, url } = payload.api
   return handler.fetch(url, {

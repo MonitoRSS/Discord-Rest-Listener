@@ -8,7 +8,11 @@ import RedisCache from './RedisCache'
 let count = 0
 const startTimer: ExtendableTimer = new ExtendableTimer(() => discordQueue.start())
 
-// Maximum of 10 requests every 1 second
+/**
+ * Parse and execute 10 payloads every 1 second.
+ * This is fine as long as the queue is paused whenever a
+ * global rate limit is hit
+ */
 const discordQueue = new PQueue({
   interval: 1000,
   intervalCap: 10,
@@ -26,6 +30,11 @@ discordQueue.on('idle', () => {
   count = 0
 })
 
+/**
+ * Parse a node-fetch non-200-status-code response for the
+ * relevant error. This is usually the error Discord returns
+ * from the API, otherwise it's a generic bad status code
+ */
 async function getBadResponseError (res: Response, payload: EnqueuePayloadType) {
   const { article, feed } = payload
   try {
@@ -36,6 +45,10 @@ async function getBadResponseError (res: Response, payload: EnqueuePayloadType) 
   }
 }
 
+/**
+ * Enqueue a payload to be later parsed for the Discord API request
+ * to be sent
+ */
 export async function enqueue (payload: EnqueuePayloadType, redisCache: RedisCache) {
   try {
     await redisCache.enqueuePayload(payload)
@@ -52,6 +65,10 @@ export async function enqueue (payload: EnqueuePayloadType, redisCache: RedisCac
   }
 }
 
+/**
+ * Get all cached payloads from Redis and enqueue them. There
+ * will be cached payloads if the service shuts down unexpectedly
+ */
 export async function enqueueOldPayloads (redisCache: RedisCache) {
   const payloads = await redisCache.getEnqueuedPayloads()
   for (let i = 0; i < payloads.length; ++i) {
@@ -60,6 +77,9 @@ export async function enqueueOldPayloads (redisCache: RedisCache) {
   }
 }
 
+/**
+ * Check if a payload is formatted correctly
+ */
 export function validatePayload (payload: EnqueuePayloadType) {
   const result = EnqueuePayloadSchema.safeParse(payload)
   if (result.success) {
@@ -70,6 +90,10 @@ export function validatePayload (payload: EnqueuePayloadType) {
   }
 }
 
+/**
+ * Blocks all pending API requests by a duration. If there
+ * is already a block, it's reset with the time passed in
+ */
 export function delayQueueBy (time: number) {
   discordQueue.pause()
   startTimer.resetWith(time)
