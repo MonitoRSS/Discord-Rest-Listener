@@ -13,6 +13,8 @@
   "author": "synzen",
   "license": "MIT",
   "dependencies": {
+    "@mikro-orm/core": "^4.0.2",
+    "@mikro-orm/mongodb": "^4.0.2",
     "@synzen/discord-rest": "^0.2.0",
     "p-queue": "^6.6.1",
     "redis": "^3.0.2",
