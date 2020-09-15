@@ -2,6 +2,7 @@ import redis from 'redis'
 import { EventEmitter } from 'events'
 import { EnqueuePayloadType } from '../schemas/EnqueuePayloadSchema'
 import { promisify } from 'util'
+import log from '../utils/log'
 
 class RedisCache extends EventEmitter {
   client: redis.RedisClient
@@ -12,6 +13,9 @@ class RedisCache extends EventEmitter {
     this.client = redis.createClient(uri)
     this.client.once('ready', () => {
       this.emit('ready')
+    })
+    this.client.on('error', (err) => {
+      log.error(err)
     })
   }
 
