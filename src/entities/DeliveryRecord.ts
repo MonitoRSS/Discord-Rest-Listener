@@ -1,6 +1,6 @@
 import { Entity, Index, PrimaryKey, Property } from "@mikro-orm/core";
 import Payload from "../utils/Payload";
-import { ObjectId } from 'mongodb'
+import { ObjectId } from '@mikro-orm/mongodb'
 
 @Entity()
 @Index({
@@ -30,7 +30,7 @@ class DeliveryRecord {
   addedAt = new Date()
 
   constructor(payload: Payload, delivered: boolean) {
-    const { article, feed } = payload.data
+    const { article, feed } = payload
     this.articleID = article._id
     this.feedURL = feed.url
     this.channel = feed.channel
