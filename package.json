@@ -4,7 +4,7 @@
   "description": "",
   "main": "build/app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "start": "npm run build && node build/app.js",
     "build": "tsc",
     "lint": "eslint src",
