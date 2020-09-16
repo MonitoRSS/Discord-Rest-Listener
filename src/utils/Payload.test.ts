@@ -42,7 +42,6 @@ describe('Payload', () => {
         articleID: payload.article._id
       })
       expect(found).toBeDefined()
-      console.log(typeof found?._id, found?._id)
       expect(found).toEqual({
         articleID: payload.article._id,
         feedURL: payload.feed.url,
