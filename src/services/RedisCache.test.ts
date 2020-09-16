@@ -30,6 +30,17 @@ describe('RedisCache', () => {
       cache.once('ready', resolve)
     })
   })
+  afterAll(async () => {
+    await new Promise((resolve, reject) => {
+      cache.client.quit((err) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve()
+        }
+      })
+    })
+  })
   afterEach(async () => {
     await new Promise((resolve, reject) => {
       cache.client.multi()
@@ -146,17 +157,5 @@ describe('RedisCache', () => {
       await expect(lindex(cache.payloadQueueKey, 0)).resolves
         .toEqual(null)
     })
-  })
-  afterAll(async () => {
-    return new Promise((resolve, reject) => {
-      cache.client.quit((err) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve()
-        }
-      })
-    })
-    
   })
 })
