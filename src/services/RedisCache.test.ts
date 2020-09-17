@@ -1,13 +1,13 @@
 import RedisCache from './RedisCache'
 import {promisify} from 'util'
-import { EnqueuePayloadType } from '../schemas/EnqueuePayloadSchema'
 import config from '../utils/config'
+import Payload from '../utils/Payload'
 
 jest.useFakeTimers()
 
 describe('RedisCache', () => {
   const cache = new RedisCache(config.redis, config.redisPrefix)
-  const payload: EnqueuePayloadType = {
+  const payload = new Payload({
     article: {
       _id: 'articleid1'
     },
@@ -20,7 +20,7 @@ describe('RedisCache', () => {
       method: 'a',
       url: 'b',
     }
-  }
+  })
   const payloadJSON = JSON.stringify(payload)
   const payloadKey = cache.getPayloadElementKey(payload)
   const lindex = promisify(cache.client.lindex).bind(cache.client)
@@ -94,7 +94,7 @@ describe('RedisCache', () => {
         .toEqual(null)
     })
     it('works with dequeuing multiple items', async () => {
-      const payload2: EnqueuePayloadType = {
+      const payload2 = new Payload({
         ...payload,
         article: {
           _id: 'payloadarticle2'
@@ -103,10 +103,10 @@ describe('RedisCache', () => {
           ...payload.feed,
           channel: 'payloadchannel2',
         }
-      }
+      })
       const payload2Key = cache.getPayloadElementKey(payload2)
       const payload2JSON = JSON.stringify(payload2)
-      const payload3: EnqueuePayloadType = {
+      const payload3 = new Payload({
         ...payload,
         article: {
           _id: 'payloadarticle3'
@@ -115,7 +115,7 @@ describe('RedisCache', () => {
           ...payload.feed,
           channel: 'payloadchannel3',
         }
-      }
+      })
       const payload3Key = cache.getPayloadElementKey(payload3)
       const payload3JSON = JSON.stringify(payload3)
       await new Promise((resolve, reject) => {

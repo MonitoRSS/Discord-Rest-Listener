@@ -2,7 +2,7 @@ import { MikroORM } from "@mikro-orm/core";
 import DeliveryRecord from "../entities/DeliveryRecord";
 import { ApiMetaType } from "../schemas/ApiMeta";
 import { ArticleMetaType } from "../schemas/ArticleMeta";
-import { EnqueuePayloadType } from "../schemas/EnqueuePayloadSchema";
+import { RawPayloadType } from "../schemas/RawPayload";
 import { FeedMetaType } from "../schemas/FeedMeta";
 import log from "./log";
 
@@ -10,7 +10,7 @@ class Payload {
   article: ArticleMetaType
   feed: FeedMetaType
   api: ApiMetaType
-  constructor (data: EnqueuePayloadType) {
+  constructor (data: RawPayloadType) {
     this.article = data.article
     this.feed = data.feed
     this.api = data.api

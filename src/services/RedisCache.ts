@@ -1,8 +1,8 @@
 import redis from 'redis'
 import { EventEmitter } from 'events'
-import { EnqueuePayloadType } from '../schemas/EnqueuePayloadSchema'
 import { promisify } from 'util'
 import log from '../utils/log'
+import Payload from '../utils/Payload'
 
 class RedisCache extends EventEmitter {
   client: redis.RedisClient
@@ -31,7 +31,7 @@ class RedisCache extends EventEmitter {
     return `${this.prefix}payload_queue`
   }
 
-  getPayloadElementKey (payload: EnqueuePayloadType) {
+  getPayloadElementKey (payload: Payload) {
     const { feed, article } = payload
     return `${this.prefix}${feed.channel}_${article._id}`
   }
@@ -48,7 +48,7 @@ class RedisCache extends EventEmitter {
       const key = keys[i]
       multi.hget(this.payloadHashKey, key)
     }
-    return new Promise<EnqueuePayloadType[]>((resolve, reject) => {
+    return new Promise<Payload[]>((resolve, reject) => {
       multi.exec((err, data) => err ? reject(err) : resolve(data))
     })
   }
@@ -57,7 +57,7 @@ class RedisCache extends EventEmitter {
    * Enqueue a payload within redis to be later dequeued
    * on a timer.
    */
-  async enqueuePayload (payload: EnqueuePayloadType) {
+  async enqueuePayload (payload: Payload) {
     const data = JSON.stringify(payload)
     const dataKey = this.getPayloadElementKey(payload)
     await new Promise((resolve, reject) => {
@@ -102,7 +102,7 @@ class RedisCache extends EventEmitter {
    * Complete a payload and purge its data from Redis.
    * This is called after a payload has finished processing.
    */
-  async completePayload (payload: EnqueuePayloadType) {
+  async completePayload (payload: Payload) {
     const dataKey = this.getPayloadElementKey(payload)
     await new Promise<string|null>((resolve, reject) => {
       this.client.multi()

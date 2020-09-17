@@ -1,7 +1,7 @@
 import { RESTHandler } from '@synzen/discord-rest'
-import { EnqueuePayloadType } from '../schemas/EnqueuePayloadSchema'
 import config from '../utils/config'
 import log from '../utils/log'
+import Payload from '../utils/Payload'
 const handler = new RESTHandler()
 
 handler.on('globalRateLimit', (apiRequest, durationMs) => {
@@ -15,7 +15,7 @@ handler.on('rateLimit', (apiRequest, durationMs) => {
 /**
  * Executes the Discord API request using payload details
  */
-export function executeFetch(payload: EnqueuePayloadType) {
+export function executeFetch(payload: Payload) {
   const { method, body, url } = payload.api
   return handler.fetch(url, {
     method,

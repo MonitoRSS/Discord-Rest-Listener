@@ -1,8 +1,9 @@
 import { Response } from 'node-fetch'
 import PQueue from 'p-queue'
-import { EnqueuePayloadSchema, EnqueuePayloadType } from '../schemas/EnqueuePayloadSchema'
+import { RawPayloadSchema, RawPayloadType } from '../schemas/RawPayload'
 import ExtendableTimer from '../utils/ExtendableTimer'
 import log from '../utils/log'
+import Payload from '../utils/Payload'
 import { executeFetch } from './DiscordRequests'
 import RedisCache from './RedisCache'
 let count = 0
@@ -35,7 +36,7 @@ discordQueue.on('idle', () => {
  * relevant error. This is usually the error Discord returns
  * from the API, otherwise it's a generic bad status code
  */
-async function getBadResponseError (res: Response, payload: EnqueuePayloadType) {
+async function getBadResponseError (res: Response, payload: Payload) {
   const { article, feed } = payload
   try {
     const json = await res.json()
@@ -49,7 +50,7 @@ async function getBadResponseError (res: Response, payload: EnqueuePayloadType) 
  * Enqueue a payload to be later parsed for the Discord API request
  * to be sent
  */
-export async function enqueue (payload: EnqueuePayloadType, redisCache: RedisCache) {
+export async function enqueue (payload: Payload, redisCache: RedisCache) {
   try {
     await redisCache.enqueuePayload(payload)
     const res = await discordQueue.add(() => executeFetch(payload))
@@ -80,8 +81,8 @@ export async function enqueueOldPayloads (redisCache: RedisCache) {
 /**
  * Check if a payload is formatted correctly
  */
-export function validatePayload (payload: EnqueuePayloadType) {
-  const result = EnqueuePayloadSchema.safeParse(payload)
+export function validatePayload (payload: RawPayloadType) {
+  const result = RawPayloadSchema.safeParse(payload)
   if (result.success) {
     return true
   } else {
