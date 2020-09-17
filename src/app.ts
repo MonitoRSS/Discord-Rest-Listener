@@ -3,12 +3,12 @@ import { delayQueueBy, enqueue, validatePayload } from './services/Queue'
 import { DiscordRESTHandler } from './services/DiscordRequests'
 import setup from './utils/setup'
 
-setup().then(async ({redisCache, sock}) => {
+setup().then(async ({redisCache, sock, orm}) => {
   // Handle incoming payloads
   for await (const [msg] of sock) {
     const data = JSON.parse(msg.toString())
     if (validatePayload(data)) {
-      enqueue(data, redisCache)
+      enqueue(data, redisCache, orm)
     }
   }
 }).catch(err => {

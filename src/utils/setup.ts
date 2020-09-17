@@ -34,7 +34,7 @@ async function setup () {
   const redisCache = await connectToRedis() 
   log.info('Redis connected, enqueuing old payloads')
   // Handle old payloads
-  await enqueueOldPayloads(redisCache)
+  await enqueueOldPayloads(redisCache, orm)
   // Start accepting new payloads
   const sock = await createConsumer()
   log.info(`Worker connected to ${config.bindingAddress}`)

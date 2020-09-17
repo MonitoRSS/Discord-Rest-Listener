@@ -1,4 +1,5 @@
-import { Response } from 'node-fetch'
+import { MikroORM } from '@mikro-orm/core'
+import fetch, { FetchError, Response } from 'node-fetch'
 import PQueue from 'p-queue'
 import { RawPayloadSchema, RawPayloadType } from '../schemas/RawPayload'
 import ExtendableTimer from '../utils/ExtendableTimer'
@@ -50,19 +51,34 @@ async function getBadResponseError (res: Response, payload: Payload) {
  * Enqueue a payload to be later parsed for the Discord API request
  * to be sent
  */
-export async function enqueue (payload: Payload, redisCache: RedisCache) {
+export async function enqueue (payload: Payload, redisCache: RedisCache, orm: MikroORM) {
   try {
     await redisCache.enqueuePayload(payload)
     const res = await discordQueue.add(() => executeFetch(payload))
     await redisCache.completePayload(payload)
     if (res.ok) {
+      await payload.recordSuccess(orm)
       return
     }
     const error = await getBadResponseError(res, payload)
-    log.error(error.message)
+    await payload.recordFailure(orm, error.message)
+    log.warn(`Failed to send payload (${error.message})`, {
+      payload
+    })
   } catch (err) {
-    // Network error, put it in the service backlog
-    log.error(`Network error (${err.message})`)
+    const meta = {
+      payload
+    }
+    let errorMessage = err.message
+    if (err.name === 'AbortError') {
+      errorMessage = `Request timed out (${err.message})`
+    } else if (err instanceof FetchError) {
+      errorMessage = `Network error (${err.message})`
+    } else {
+      errorMessage = `Enqueue error (${err.message})`
+    }
+    log.error(errorMessage, meta)
+    await payload.recordFailure(orm, errorMessage)
   }
 }
 
@@ -70,11 +86,11 @@ export async function enqueue (payload: Payload, redisCache: RedisCache) {
  * Get all cached payloads from Redis and enqueue them. There
  * will be cached payloads if the service shuts down unexpectedly
  */
-export async function enqueueOldPayloads (redisCache: RedisCache) {
+export async function enqueueOldPayloads (redisCache: RedisCache, orm: MikroORM) {
   const payloads = await redisCache.getEnqueuedPayloads()
   for (let i = 0; i < payloads.length; ++i) {
     const payload = payloads[i]
-    enqueue(payload, redisCache)
+    enqueue(payload, redisCache, orm)
   }
 }
 
