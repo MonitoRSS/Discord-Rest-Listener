@@ -2,7 +2,9 @@ import { Entity, Index, PrimaryKey, Property } from "@mikro-orm/core";
 import Payload from "../utils/Payload";
 import { ObjectId } from '@mikro-orm/mongodb'
 
-@Entity()
+@Entity({
+  collection: 'delivery_records_service'
+})
 @Index({
   properties: ['channel']
 })
