@@ -81,12 +81,14 @@ export async function enqueueOldPayloads (redisCache: RedisCache) {
 /**
  * Check if a payload is formatted correctly
  */
-export function validatePayload (payload: RawPayloadType) {
-  const result = RawPayloadSchema.safeParse(payload)
+export function validatePayload (rawPayload: RawPayloadType) {
+  const result = RawPayloadSchema.safeParse(rawPayload)
   if (result.success) {
     return true
   } else {
-    log.error(`Invalid payload\n${JSON.stringify(payload, null, 2)}\n${result.error.message}`)
+    log.error(`Invalid rawPayload (${result.error.message})`, {
+      rawPayload
+    })
     return false
   }
 }
