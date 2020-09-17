@@ -20,14 +20,31 @@ class Payload {
    * Record a payload's successful delivery/request to Discord
    */
   async recordSuccess(orm: MikroORM) {
-    const { article, feed } = this
-    const channel = feed.channel
     log.debug('Recording delivery record success')
+    const record = new DeliveryRecord(this, true)
     try {
-      const record = new DeliveryRecord(this, true)
       await orm.em.getRepository(DeliveryRecord).persistAndFlush(record)
     } catch (err) {
-      log.error(`Failed to record article ${article._id} delivery success in channel ${channel} in ArticleQueue (${err.message})`)
+      log.error(`Failed to record article delivery success(${err.message})`, {
+        record
+      })
+    }
+  }
+
+  /**
+   * Record a payload's failed delivery/request to Discord
+   */
+  async recordFailure (orm: MikroORM, message: string) {
+    log.debug('Recording delivery record failure', {
+    })
+    const record = new DeliveryRecord(this, false)
+    record.comment = message
+    try {
+      await orm.em.getRepository(DeliveryRecord).persistAndFlush(record)
+    } catch (err) {
+      log.error(`Failed to record article delivery failure (${err.message})`, {
+        record
+      })
     }
   }
 }

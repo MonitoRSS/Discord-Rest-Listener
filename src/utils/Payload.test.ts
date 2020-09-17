@@ -14,12 +14,11 @@ describe('Payload', () => {
       clientUrl: testConfig.databaseURI,
     })
   })
-  afterAll(async () => {
-    await orm.close()
-  })
-  afterEach(async () => {
+  beforeEach(async () => {
     await orm.em.getRepository(DeliveryRecord).nativeDelete({})
-    jest.resetAllMocks()
+  })
+  afterAll(async () => {
+    await orm.close(true)
   })
   describe('recordSuccess', () => {
     it('works', async () => {
@@ -49,6 +48,39 @@ describe('Payload', () => {
         delivered: true,
         addedAt: expect.any(Date),
         _id: expect.any(Object)
+      })
+    })
+  })
+  describe('recordFailure', () => {
+    it('works', async () => {
+      const payload = new Payload({
+        article: {
+          _id: 'articleid'
+        },
+        feed: {
+          channel: 'channelid',
+          _id: 'feedid',
+          url: 'feedurl'
+        },
+        api: {
+          method: 'apimethod',
+          url: 'apiurl'
+        }
+      })
+      const errorMessage = 'record failure error message'
+      await payload.recordFailure(orm, errorMessage)
+      const found = await orm.em.getRepository(DeliveryRecord).findOne({
+        articleID: payload.article._id
+      })
+      expect(found).toBeDefined()
+      expect(found).toEqual({
+        articleID: payload.article._id,
+        feedURL: payload.feed.url,
+        channel: payload.feed.channel,
+        delivered: false,
+        addedAt: expect.any(Date),
+        _id: expect.any(Object),
+        comment: errorMessage
       })
     })
   })
