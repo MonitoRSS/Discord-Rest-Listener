@@ -1,5 +1,5 @@
 import { MikroORM } from '@mikro-orm/core'
-import fetch, { FetchError, Response } from 'node-fetch'
+import { Response } from 'node-fetch'
 import PQueue from 'p-queue'
 import { RawPayloadSchema, RawPayloadType } from '../schemas/RawPayload'
 import ExtendableTimer from '../utils/ExtendableTimer'
@@ -15,7 +15,7 @@ const startTimer: ExtendableTimer = new ExtendableTimer(() => discordQueue.start
  * This is fine as long as the queue is paused whenever a
  * global rate limit is hit
  */
-const discordQueue = new PQueue({
+export const discordQueue = new PQueue({
   interval: 1000,
   intervalCap: 10,
 })
@@ -58,12 +58,7 @@ export async function enqueue (payload: Payload, redisCache: RedisCache, orm: Mi
   try {
     res = await discordQueue.add(() => executeFetch(payload))
   } catch (err) {
-    let errorMessage = err.message
-    if (err.name === 'AbortError') {
-      errorMessage = `Request timed out (${err.message})`
-    } else {
-      errorMessage = `Network error (${err.message})`
-    }
+    const errorMessage = `Network error (${err.message})`
     log.error(errorMessage, {
       payload
     })
