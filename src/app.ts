@@ -6,9 +6,14 @@ import setup from './utils/setup'
 setup().then(async ({redisCache, sock, orm}) => {
   // Handle incoming payloads
   for await (const [msg] of sock) {
-    const data = JSON.parse(msg.toString())
-    if (validatePayload(data)) {
-      enqueue(data, redisCache, orm)
+    const payload = JSON.parse(msg.toString())
+    if (validatePayload(payload)) {
+      enqueue(payload, redisCache, orm)
+        .catch((err) => {
+          log.error(`Enqueue error (${err.message})`, {
+            payload
+          })
+        })
     }
   }
 }).catch(err => {

@@ -52,34 +52,36 @@ async function getBadResponseError (res: Response, payload: Payload) {
  * to be sent
  */
 export async function enqueue (payload: Payload, redisCache: RedisCache, orm: MikroORM) {
+  await redisCache.enqueuePayload(payload)
+  let res: Response
+  // Only handle fetch errors here. Other errors should be handled in calling function.
   try {
-    await redisCache.enqueuePayload(payload)
-    const res = await discordQueue.add(() => executeFetch(payload))
-    await redisCache.completePayload(payload)
-    if (res.ok) {
-      await payload.recordSuccess(orm)
-      return
-    }
-    const error = await getBadResponseError(res, payload)
-    await payload.recordFailure(orm, error.message)
-    log.warn(`Failed to send payload (${error.message})`, {
-      payload
-    })
+    res = await discordQueue.add(() => executeFetch(payload))
   } catch (err) {
-    const meta = {
-      payload
-    }
     let errorMessage = err.message
     if (err.name === 'AbortError') {
       errorMessage = `Request timed out (${err.message})`
-    } else if (err instanceof FetchError) {
-      errorMessage = `Network error (${err.message})`
     } else {
-      errorMessage = `Enqueue error (${err.message})`
+      errorMessage = `Network error (${err.message})`
     }
-    log.error(errorMessage, meta)
+    log.error(errorMessage, {
+      payload
+    })
     await payload.recordFailure(orm, errorMessage)
+    return
+  } finally {
+    await redisCache.completePayload(payload)
   }
+  
+  if (res.ok) {
+    await payload.recordSuccess(orm)
+    return
+  }
+  const error = await getBadResponseError(res, payload)
+  await payload.recordFailure(orm, error.message)
+  log.warn(`Failed to send payload (${error.message})`, {
+    payload
+  })
 }
 
 /**
