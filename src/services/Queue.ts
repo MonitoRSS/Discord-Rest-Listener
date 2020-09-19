@@ -99,9 +99,6 @@ export function validatePayload (rawPayload: RawPayloadType) {
   if (result.success) {
     return true
   } else {
-    log.error(`Invalid rawPayload (${result.error.message})`, {
-      rawPayload
-    })
     return false
   }
 }

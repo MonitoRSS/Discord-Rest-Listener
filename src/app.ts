@@ -6,6 +6,7 @@ import setup from './utils/setup'
 setup().then(async ({redisCache, sock, orm}) => {
   // Handle incoming payloads
   for await (const [msg] of sock) {
+    console.log(msg)
     const payload = JSON.parse(msg.toString())
     if (validatePayload(payload)) {
       enqueue(payload, redisCache, orm)
@@ -14,6 +15,10 @@ setup().then(async ({redisCache, sock, orm}) => {
             payload
           })
         })
+    } else {
+      log.error(`Invalid raw payload received`, {
+        payload
+      })
     }
   }
 }).catch(err => {
