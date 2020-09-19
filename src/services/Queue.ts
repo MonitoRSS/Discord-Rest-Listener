@@ -8,6 +8,7 @@ import Payload from '../utils/Payload'
 import { executeFetch } from './DiscordRequests'
 import RedisCache from './RedisCache'
 let count = 0
+let maxCount = 0
 const startTimer: ExtendableTimer = new ExtendableTimer(() => discordQueue.start())
 
 /**
@@ -25,10 +26,12 @@ discordQueue.on('active', () => {
     log.info('Queue is active')
   }
   count++
+  maxCount = Math.max(maxCount, count)
 })
 
 discordQueue.on('idle', () => {
-  log.info('Queue finished all tasks')
+  log.info(`Queue finished all tasks (max length reached: ${maxCount})`)
+  maxCount = 0
   count = 0
 })
 
