@@ -7,18 +7,18 @@ import Payload from './utils/Payload'
 setup().then(async ({redisCache, sock, orm}) => {
   // Handle incoming payloads
   for await (const [msg] of sock) {
-    const prawPayload = JSON.parse(msg.toString())
-    if (validatePayload(prawPayload)) {
-      const parsedPayload = new Payload(prawPayload)
+    const rawPayload = JSON.parse(msg.toString())
+    if (validatePayload(rawPayload)) {
+      const parsedPayload = new Payload(rawPayload)
       enqueue(parsedPayload, redisCache, orm)
         .catch((err) => {
           log.error(`Enqueue error (${err.message})`, {
-            prawPayload
+            rawPayload
           })
         })
     } else {
-      log.error(`Invalid prawPayload received`, {
-        prawPayload
+      log.error(`Invalid rawPayload received`, {
+        rawPayload
       })
     }
   }
