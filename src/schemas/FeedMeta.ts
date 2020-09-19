@@ -4,6 +4,6 @@ export const FeedMeta = z.object({
   _id: z.string(),
   url: z.string(),
   channel: z.string()
-}).nonstrict()
+})
 
 export type FeedMetaType = z.infer<typeof FeedMeta>
