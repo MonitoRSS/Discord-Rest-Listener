@@ -88,6 +88,7 @@ export async function enqueue (payload: Payload, redisCache: RedisCache, orm: Mi
  */
 export async function enqueueOldPayloads (redisCache: RedisCache, orm: MikroORM) {
   const payloads = await redisCache.getEnqueuedPayloads()
+  log.info(`Enqueuing ${payloads.length} previously stored payloads`)
   for (let i = 0; i < payloads.length; ++i) {
     const payload = payloads[i]
     enqueue(payload, redisCache, orm)
