@@ -5,6 +5,7 @@ import { enqueueOldPayloads } from "../services/Queue"
 import RedisCache from "../services/RedisCache"
 import config from "./config"
 import log from "./log"
+import setupHealthCheck from "./setupHealthCheck"
 
 async function createConsumer () {
   const sock = new Pull()
@@ -37,7 +38,9 @@ async function setup () {
   await enqueueOldPayloads(redisCache, orm)
   // Start accepting new payloads
   const sock = await createConsumer()
-  log.info(`Worker connected to ${config.bindingAddress}`)
+  log.info(`Worker connected to ${config.bindingAddress}, setting up health check`)
+  const healthCheckPort = await setupHealthCheck()
+  log.info(`Health check set up at HTTP port ${healthCheckPort}`)
   return {
     orm,
     sock,
