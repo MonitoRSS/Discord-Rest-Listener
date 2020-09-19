@@ -2,22 +2,23 @@ import log from './utils/log'
 import { delayQueueBy, enqueue, validatePayload } from './services/Queue'
 import { DiscordRESTHandler } from './services/DiscordRequests'
 import setup from './utils/setup'
+import Payload from './utils/Payload'
 
 setup().then(async ({redisCache, sock, orm}) => {
   // Handle incoming payloads
   for await (const [msg] of sock) {
-    console.log(msg)
-    const payload = JSON.parse(msg.toString())
-    if (validatePayload(payload)) {
-      enqueue(payload, redisCache, orm)
+    const prawPayload = JSON.parse(msg.toString())
+    if (validatePayload(prawPayload)) {
+      const parsedPayload = new Payload(prawPayload)
+      enqueue(parsedPayload, redisCache, orm)
         .catch((err) => {
           log.error(`Enqueue error (${err.message})`, {
-            payload
+            prawPayload
           })
         })
     } else {
-      log.error(`Invalid raw payload received`, {
-        payload
+      log.error(`Invalid prawPayload received`, {
+        prawPayload
       })
     }
   }
