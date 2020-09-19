@@ -18,7 +18,7 @@ function setupHealthCheck () {
   })
 
   const address = new URL(config.bindingAddress)
-  const port = Number(address.port) + 1
+  const port = Number(address.port)
   app.listen(port)
   return port
 }
