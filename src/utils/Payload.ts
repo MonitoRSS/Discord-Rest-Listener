@@ -47,6 +47,17 @@ class Payload {
       })
     }
   }
+
+  /**
+   * Serialize payload to store in Redis
+   */
+  toJSON () {
+    return {
+      article: this.article,
+      feed: this.feed,
+      api: this.api
+    }
+  }
 }
 
 export default Payload

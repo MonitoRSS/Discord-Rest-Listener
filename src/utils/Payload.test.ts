@@ -84,4 +84,33 @@ describe('Payload', () => {
       })
     })
   })
+  describe('toJSON', () => {
+    it('works', () => {
+      const article = {
+        _id: 'articleid'
+      }
+      const feed = {
+        channel: 'channelid',
+        _id: 'feedid',
+        url: 'feedurl'
+      }
+      const api = {
+        method: 'apimethod',
+        url: 'apiurl'
+      }
+      const payload = new Payload({
+        article,
+        feed,
+        api
+      })
+      payload.article = article
+      payload.feed = feed
+      payload.api = api
+      expect(payload.toJSON()).toEqual({
+        article,
+        feed,
+        api
+      })
+    })
+  })
 })

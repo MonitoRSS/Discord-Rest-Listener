@@ -49,7 +49,15 @@ class RedisCache extends EventEmitter {
       multi.hget(this.payloadHashKey, key)
     }
     return new Promise<Payload[]>((resolve, reject) => {
-      multi.exec((err, data) => err ? reject(err) : resolve(data))
+      multi.exec((err, payloadStrings: string[]) => {
+        if (err) {
+          reject(err)
+          return
+        }
+        const parsedPayloads = payloadStrings
+          .map(str => new Payload(JSON.parse(str)))
+        resolve(parsedPayloads)
+      })
     })
   }
 
@@ -58,8 +66,8 @@ class RedisCache extends EventEmitter {
    * on a timer.
    */
   async enqueuePayload (payload: Payload) {
-    const data = JSON.stringify(payload)
     const dataKey = this.getPayloadElementKey(payload)
+    const data = JSON.stringify(payload.toJSON())
     await new Promise((resolve, reject) => {
       this.client.multi()
         .hset(this.payloadHashKey, dataKey, data)

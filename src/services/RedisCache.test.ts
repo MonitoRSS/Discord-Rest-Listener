@@ -50,6 +50,38 @@ describe('RedisCache', () => {
         .exec((err) => err ? reject(err) : resolve())
     })
   })
+  describe('getEnqueuedPayloads', () => {
+    it('works', async () => {
+      await new Promise((resolve, reject) => {
+        cache.client.multi()
+          .hset(cache.payloadHashKey, payloadKey, payloadJSON)
+          .rpush(cache.payloadQueueKey, payloadKey)
+          .rpush(cache.payloadProcessingQueueKey, payloadKey)
+          .exec((err) => err ? reject(err) : resolve())
+      })
+      const payload2 = new Payload({
+        ...payload,
+        article: {
+          _id: 'articleid2'
+        },
+      })
+      const payload2Key = cache.getPayloadElementKey(payload2)
+      const payload2JSON = JSON.stringify(payload2.toJSON())
+      await new Promise((resolve, reject) => {
+        cache.client.multi()
+          .hset(cache.payloadHashKey, payload2Key, payload2JSON)
+          .rpush(cache.payloadQueueKey, payload2Key)
+          .rpush(cache.payloadProcessingQueueKey, payload2Key)
+          .exec((err) => err ? reject(err) : resolve())
+      })
+      const payloads = await cache.getEnqueuedPayloads()
+      expect(payloads.length).toEqual(2)
+      expect(payloads.find((thisPayload) => thisPayload.article._id === payload.article._id))
+        .toBeInstanceOf(Payload)
+      expect(payloads.find((thisPayload) => thisPayload.article._id === payload2.article._id))
+        .toBeInstanceOf(Payload)
+    })
+  })
   describe('enqueuePayload', () => {
     it('works', async () => {
       await cache.enqueuePayload(payload)
