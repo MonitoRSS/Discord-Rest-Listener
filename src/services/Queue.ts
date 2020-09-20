@@ -10,7 +10,10 @@ import { executeFetch } from './DiscordRequests'
 import RedisCache from './RedisCache'
 let count = 0
 let maxCount = 0
-const startTimer: ExtendableTimer = new ExtendableTimer(() => discordQueue.start())
+const startTimer: ExtendableTimer = new ExtendableTimer(() => {
+  log.info('Restarting queue')
+  discordQueue.start()
+})
 
 /**
  * Parse and execute 10 payloads every 1 second.

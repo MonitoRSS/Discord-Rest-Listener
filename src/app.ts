@@ -35,6 +35,8 @@ setup().then(async ({redisCache, sock, orm}) => {
 
 // Delay the payload queue whenever a global rate limit is hit
 DiscordRESTHandler.on('globalRateLimit', (_, blockedDurationMs) => {
+  const delayDuration = blockedDurationMs * 2
+  log.info(`Delaying queue by ${delayDuration}`)
   // Delay the queue by 2x the blocked duration from discord for safety
-  delayQueueBy(blockedDurationMs * 2)
+  delayQueueBy(delayDuration)
 })
