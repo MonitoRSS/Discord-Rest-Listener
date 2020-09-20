@@ -9,7 +9,7 @@ import setupHealthCheck from "./setupHealthCheck"
 
 async function createConsumer () {
   const sock = new Pull()
-  await sock.connect(config.bindingAddress)
+  await sock.bind(config.bindingAddress)
   return sock
 }
 
