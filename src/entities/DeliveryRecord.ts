@@ -8,6 +8,12 @@ import { ObjectId } from '@mikro-orm/mongodb'
 @Index({
   properties: ['channel']
 })
+@Index({
+  properties: ['addedAt'],
+  options: {
+    expireAfterSeconds: 60 * 60 * 24 * 3
+  }
+})
 class DeliveryRecord {
 
   @PrimaryKey()

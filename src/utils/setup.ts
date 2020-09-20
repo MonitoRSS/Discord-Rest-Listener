@@ -28,7 +28,8 @@ async function setup () {
   const orm = await MikroORM.init({
     entities: [DeliveryRecord],
     type: 'mongo',
-    clientUrl: config.databaseURI
+    clientUrl: config.databaseURI,
+    ensureIndexes: true
   })
   log.info('Connected to Mongo, connecting to Redis')
   // Connect to redis
