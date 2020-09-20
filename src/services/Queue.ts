@@ -65,7 +65,7 @@ export async function enqueue (payload: Payload, redisCache: RedisCache, orm: Mi
   try {
     res = await discordQueue.add(() => executeFetch(payload))
   } catch (err) {
-    const errorMessage = `Network error (${err.message})`
+    const errorMessage = `Fetch error (${err.message})`
     log.error(errorMessage, {
       payload
     })
