@@ -3,11 +3,13 @@ import { delayQueueBy, enqueue, validatePayload } from './services/Queue'
 import { DiscordRESTHandler } from './services/DiscordRequests'
 import setup from './utils/setup'
 import Payload from './utils/Payload'
-
+let tenMinInvalidRequests = 0
 let tenMinCount = 0
+
 setInterval(() => {
   log.info(`Number of payloads in the last 10 minutes: ${tenMinCount}`)
   tenMinCount = 0
+  tenMinInvalidRequests = 0
 }, 1000 * 60 * 10)
 
 setup().then(async ({redisCache, sock, orm}) => {
@@ -35,8 +37,15 @@ setup().then(async ({redisCache, sock, orm}) => {
 
 // Delay the payload queue whenever a global rate limit is hit
 DiscordRESTHandler.on('globalRateLimit', (_, blockedDurationMs) => {
-  const delayDuration = blockedDurationMs * 2
-  log.info(`Delaying queue by ${delayDuration}`)
   // Delay the queue by 2x the blocked duration from discord for safety
+  const delayDuration = blockedDurationMs * 2
   delayQueueBy(delayDuration)
+})
+
+DiscordRESTHandler.on('invalidRequest', () => {
+  if (tenMinInvalidRequests++ >= 5000) {
+    log.info(`${tenMinInvalidRequests} invalid requests reached`)
+    // Halfway to a temporary ban - delay everything by 10 minutes
+    delayQueueBy(1000 * 60 * 10)
+  }
 })
