@@ -23,6 +23,7 @@ describe('Payload', () => {
   describe('recordSuccess', () => {
     it('works', async () => {
       const payload = new Payload({
+        token: 'abc',
         article: {
           _id: 'articleid'
         },
@@ -54,6 +55,7 @@ describe('Payload', () => {
   describe('recordFailure', () => {
     it('works', async () => {
       const payload = new Payload({
+        token: 'abc',
         article: {
           _id: 'articleid'
         },
@@ -99,6 +101,7 @@ describe('Payload', () => {
         url: 'apiurl'
       }
       const payload = new Payload({
+        token: 'abc',
         article,
         feed,
         api

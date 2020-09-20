@@ -10,6 +10,7 @@ describe('RedisCache', () => {
   const cache = new RedisCache(config.redis, config.redisPrefix)
   cache.client = RedisMock.createClient()
   const payload = new Payload({
+    token: 'abc',
     article: {
       _id: 'articleid1'
     },
@@ -62,7 +63,8 @@ describe('RedisCache', () => {
           .exec((err) => err ? reject(err) : resolve())
       })
       const payload2 = new Payload({
-        ...payload,
+        ...payload.toJSON(),
+        token: 'abc',
         article: {
           _id: 'articleid2'
         },
@@ -129,6 +131,7 @@ describe('RedisCache', () => {
     })
     it('works with dequeuing multiple items', async () => {
       const payload2 = new Payload({
+        token: 'abc',
         ...payload,
         article: {
           _id: 'payloadarticle2'
@@ -141,6 +144,7 @@ describe('RedisCache', () => {
       const payload2Key = cache.getPayloadElementKey(payload2)
       const payload2JSON = JSON.stringify(payload2)
       const payload3 = new Payload({
+        token: 'abc',
         ...payload,
         article: {
           _id: 'payloadarticle3'
