@@ -15,7 +15,7 @@
   "dependencies": {
     "@mikro-orm/core": "^4.0.2",
     "@mikro-orm/mongodb": "^4.0.2",
-    "@synzen/discord-rest": "^0.2.0",
+    "@synzen/discord-rest": "^0.2.1",
     "express": "^4.17.1",
     "express-winston": "^4.0.5",
     "p-queue": "^6.6.1",
