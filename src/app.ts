@@ -4,9 +4,16 @@ import { DiscordRESTHandler } from './services/DiscordRequests'
 import setup from './utils/setup'
 import Payload from './utils/Payload'
 
+let tenMinCount = 0
+setInterval(() => {
+  log.info(`Number of payloads in the last 10 minutes: ${tenMinCount}`)
+  tenMinCount = 0
+}, 1000 * 60 * 10)
+
 setup().then(async ({redisCache, sock, orm}) => {
   // Handle incoming payloads
   for await (const [msg] of sock) {
+    tenMinCount++
     const rawPayload = JSON.parse(msg.toString())
     if (validatePayload(rawPayload)) {
       const parsedPayload = new Payload(rawPayload)
