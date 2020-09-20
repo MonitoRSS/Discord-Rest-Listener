@@ -23,7 +23,7 @@ class Payload {
     log.debug('Recording delivery record success')
     const record = new DeliveryRecord(this, true)
     try {
-      await orm.em.getRepository(DeliveryRecord).persistAndFlush(record)
+      await orm.em.nativeInsert(record)
     } catch (err) {
       log.error(`Failed to record article delivery success(${err.message})`, {
         record
@@ -40,7 +40,7 @@ class Payload {
     const record = new DeliveryRecord(this, false)
     record.comment = message
     try {
-      await orm.em.getRepository(DeliveryRecord).persistAndFlush(record)
+      await orm.em.nativeInsert(record)
     } catch (err) {
       log.error(`Failed to record article delivery failure (${err.message})`, {
         record
