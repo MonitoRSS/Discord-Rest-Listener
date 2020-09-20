@@ -2,6 +2,7 @@ import { MikroORM } from '@mikro-orm/core'
 import { Response } from 'node-fetch'
 import PQueue from 'p-queue'
 import { RawPayloadSchema, RawPayloadType } from '../schemas/RawPayload'
+import config from '../utils/config'
 import ExtendableTimer from '../utils/ExtendableTimer'
 import log from '../utils/log'
 import Payload from '../utils/Payload'
@@ -101,7 +102,7 @@ export async function enqueueOldPayloads (redisCache: RedisCache, orm: MikroORM)
 export function validatePayload (rawPayload: RawPayloadType) {
   const result = RawPayloadSchema.safeParse(rawPayload)
   if (result.success) {
-    return true
+    return rawPayload.token === config.token
   } else {
     return false
   }
