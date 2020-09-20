@@ -2,11 +2,13 @@ import RedisCache from './RedisCache'
 import {promisify} from 'util'
 import config from '../utils/config'
 import Payload from '../utils/Payload'
+import RedisMock from 'redis-mock'
 
 jest.useFakeTimers()
 
 describe('RedisCache', () => {
   const cache = new RedisCache(config.redis, config.redisPrefix)
+  cache.client = RedisMock.createClient()
   const payload = new Payload({
     article: {
       _id: 'articleid1'
@@ -185,7 +187,9 @@ describe('RedisCache', () => {
     it('removes the hash and queue item', async () => {
       await cache.completePayload(payload)
       await expect(hget(cache.payloadHashKey, payloadKey)).resolves
-        .toEqual(null)
+        // This should equal to null but redis-mock erroneously returns undefined
+        // .toEqual(null)
+        .toEqual(undefined)
       await expect(lindex(cache.payloadQueueKey, 0)).resolves
         .toEqual(null)
     })

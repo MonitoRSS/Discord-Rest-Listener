@@ -20,6 +20,7 @@
     "express-winston": "^4.0.5",
     "p-queue": "^6.6.1",
     "redis": "^3.0.2",
+    "redis-mock": "^0.52.0",
     "winston": "^3.3.3",
     "zeromq": "^6.0.0-beta.6",
     "zod": "^1.10.4"
@@ -30,6 +31,7 @@
     "@types/jest": "^26.0.13",
     "@types/node-fetch": "^2.5.7",
     "@types/redis": "^2.8.27",
+    "@types/redis-mock": "^0.17.0",
     "@typescript-eslint/eslint-plugin": "^3.10.1",
     "@typescript-eslint/parser": "^3.10.1",
     "eslint": "^7.7.0",
