@@ -5,6 +5,7 @@ import { ArticleMetaType } from "../schemas/ArticleMeta";
 import { RawPayloadType } from "../schemas/RawPayload";
 import { FeedMetaType } from "../schemas/FeedMeta";
 import log from "./log";
+import GeneralStat from "../entities/GeneralStat";
 
 class Payload {
   article: ArticleMetaType
@@ -24,6 +25,7 @@ class Payload {
     const record = new DeliveryRecord(this, true)
     try {
       await orm.em.nativeInsert(record)
+      await GeneralStat.increaseNumericStat(orm, GeneralStat.keys.ARTICLES_SENT)
     } catch (err) {
       log.error(`Failed to record article delivery success(${err.message})`, {
         record

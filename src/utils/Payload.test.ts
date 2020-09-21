@@ -1,5 +1,6 @@
 import { MikroORM } from "@mikro-orm/core"
 import DeliveryRecord from "../entities/DeliveryRecord"
+import GeneralStat from "../entities/GeneralStat"
 import Payload from "./Payload"
 import testConfig from "./testConfig"
 
@@ -9,13 +10,14 @@ describe('Payload', () => {
   let orm: MikroORM
   beforeAll(async () => {
     orm = await MikroORM.init({
-      entities: [DeliveryRecord],
+      entities: [DeliveryRecord, GeneralStat],
       type: 'mongo',
       clientUrl: testConfig.databaseURI,
     })
   })
   beforeEach(async () => {
     await orm.em.getRepository(DeliveryRecord).nativeDelete({})
+    await orm.em.getRepository(GeneralStat).nativeDelete({})
   })
   afterAll(async () => {
     await orm.close(true)
@@ -50,6 +52,28 @@ describe('Payload', () => {
         addedAt: expect.any(Date),
         _id: expect.any(Object)
       })
+    })
+    it('adds 1 to general stats for articles sent', async () => {
+      const payload = new Payload({
+        token: 'abc',
+        article: {
+          _id: 'articleid'
+        },
+        feed: {
+          channel: 'channelid',
+          _id: 'feedid',
+          url: 'feedurl'
+        },
+        api: {
+          method: 'apimethod',
+          url: 'apiurl'
+        }
+      })
+      await payload.recordSuccess(orm)
+      const found = await orm.em.getRepository(GeneralStat).findOne({
+        _id: GeneralStat.keys.ARTICLES_SENT
+      })
+      expect(found?.data).toEqual(1)
     })
   })
   describe('recordFailure', () => {
