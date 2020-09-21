@@ -23,10 +23,6 @@ class RedisCache extends EventEmitter {
     return `${this.prefix}payload_data`
   }
 
-  get payloadProcessingQueueKey () {
-    return `${this.prefix}payload_processing_queue`
-  }
-
   get payloadQueueKey () {
     return `${this.prefix}payload_queue`
   }
@@ -72,38 +68,8 @@ class RedisCache extends EventEmitter {
       this.client.multi()
         .hset(this.payloadHashKey, dataKey, data)
         .rpush(this.payloadQueueKey, dataKey)
-        .rpush(this.payloadProcessingQueueKey, dataKey)
         .exec((err) => err ? reject(err) : resolve())
     })
-  }
-
-  /**
-   * Dequeue and return a payload from the processing queue.
-   * Don't delete the hash until the payload is completed
-   */
-  async dequeuePayloads (count = 1) {
-    // Get payload keys
-    const poppedPayloadKeys = await new Promise<string[]>((resolve, reject) => {
-      const popMulti = this.client.multi()
-      for (let i = 0; i < count; ++i) {
-        popMulti.lpop(this.payloadProcessingQueueKey)
-      }
-      popMulti.exec((err, results) => err ? reject(err) : resolve(results))
-    })
-    const filteredKeys = poppedPayloadKeys.filter((key) => key)
-    // Get the data associated with each payload key
-    const payloadData = await new Promise<string[]>((resolve, reject) => {
-      const multi = this.client.multi()
-      for (let i = 0; i < filteredKeys.length; ++i) {
-        multi.hget(this.payloadHashKey, filteredKeys[i])
-      }
-      multi.exec((err, results) => err ? reject(err) : resolve(results))
-    })
-    // Convert the data to JSON
-    const filteredPaylods = payloadData
-      .filter((str) => str)
-      .map((data) => JSON.parse(data))
-    return filteredPaylods
   }
 
   /**
