@@ -92,6 +92,19 @@ describe('RedisCache', () => {
         .toEqual(JSON.stringify(payload))
     })
   })
+  describe('getQueueLength', () => {
+    it('works', async () => {
+      await new Promise((resolve, reject) => {
+        cache.client.rpush(cache.payloadQueueKey, '1', (err, res) => err 
+          ? reject(err) : resolve(res))
+      })
+      await new Promise((resolve, reject) => {
+        cache.client.rpush(cache.payloadQueueKey, '2', (err, res) => err 
+          ? reject(err) : resolve(res))
+      })
+      await expect(cache.getQueueLength()).resolves.toEqual(2)
+    })
+  })
   describe('completePayload', () => {
     beforeEach(async () => {
       await new Promise((resolve, reject) => {

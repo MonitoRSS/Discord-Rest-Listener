@@ -73,6 +73,15 @@ class RedisCache extends EventEmitter {
   }
 
   /**
+   * Get the number of pending payloads that are waiting to
+   * be processed
+   */
+  async getQueueLength () {
+    const llen = promisify(this.client.llen).bind(this.client)
+    return llen(this.payloadQueueKey)
+  }
+
+  /**
    * Complete a payload and purge its data from Redis.
    * This is called after a payload has finished processing.
    */

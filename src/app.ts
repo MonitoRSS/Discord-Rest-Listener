@@ -6,13 +6,19 @@ import Payload from './utils/Payload'
 let tenMinInvalidRequests = 0
 let tenMinCount = 0
 
-setInterval(() => {
-  log.info(`Number of payloads in the last 10 minutes: ${tenMinCount}`)
-  tenMinCount = 0
-  tenMinInvalidRequests = 0
-}, 1000 * 60 * 10)
-
 setup().then(async ({redisCache, sock, orm}) => {
+  // Log the queue length and payloads received every 10 min
+  setInterval(() => {
+    log.info(`Number of payloads in the last 10 minutes: ${tenMinCount}`)
+    tenMinInvalidRequests = 0
+    tenMinCount = 0
+    redisCache.getQueueLength().then((len) => {
+      log.info(`Current queue length: ${len}`)
+    }).catch(err => {
+      log.warn(`Failed to get queue length on interval (${err.message})`)
+    })
+  }, 1000 * 60 * 10)
+
   // Handle incoming payloads
   for await (const [msg] of sock) {
     tenMinCount++
