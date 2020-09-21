@@ -5,11 +5,11 @@ import Payload from '../utils/Payload'
 const handler = new RESTHandler()
 
 handler.on('globalRateLimit', (apiRequest, durationMs) => {
-  log.error(`Global rate limit hit for ${apiRequest.toString()} (retry after ${durationMs}ms)`)
+  log.warn(`Global rate limit hit for ${apiRequest.toString()} (retry after ${durationMs}ms)`)
 })
 
 handler.on('rateLimit', (apiRequest, durationMs) => {
-  log.error(`Rate limit hit for ${apiRequest.toString()} (retry after ${durationMs})ms`)
+  log.warn(`Rate limit hit for ${apiRequest.toString()} (retry after ${durationMs})ms`)
 })
 
 /**

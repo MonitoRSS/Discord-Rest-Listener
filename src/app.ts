@@ -15,7 +15,7 @@ setup().then(async ({redisCache, sock, orm}) => {
     redisCache.getQueueLength().then((len) => {
       log.info(`Current queue length: ${len}`)
     }).catch(err => {
-      log.warn(`Failed to get queue length on interval (${err.message})`)
+      log.error(`Failed to get queue length on interval (${err.message})`)
     })
   }, 1000 * 60 * 10)
 
@@ -32,7 +32,7 @@ setup().then(async ({redisCache, sock, orm}) => {
           })
         })
     } else {
-      log.error(`Invalid rawPayload received`, {
+      log.warn(`Invalid rawPayload received`, {
         rawPayload
       })
     }
@@ -50,7 +50,7 @@ DiscordRESTHandler.on('globalRateLimit', (_, blockedDurationMs) => {
 
 DiscordRESTHandler.on('invalidRequest', () => {
   if (tenMinInvalidRequests++ >= 5000) {
-    log.info(`${tenMinInvalidRequests} invalid requests reached`)
+    log.warn(`${tenMinInvalidRequests} invalid requests reached`)
     // Halfway to a temporary ban - delay everything by 10 minutes
     delayQueueBy(1000 * 60 * 10)
   }
