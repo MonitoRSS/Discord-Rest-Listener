@@ -51,6 +51,12 @@ class RedisCache extends EventEmitter {
           return
         }
         const parsedPayloads = payloadStrings
+          .filter(str => {
+            if (!str) {
+              log.warn(`Invalid payload found`)
+            }
+            return !!str
+          })
           .map(str => new Payload(JSON.parse(str)))
         resolve(parsedPayloads)
       })
