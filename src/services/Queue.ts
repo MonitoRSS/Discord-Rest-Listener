@@ -22,7 +22,7 @@ const startTimer: ExtendableTimer = new ExtendableTimer(() => {
  */
 export const discordQueue = new PQueue({
   interval: 1000,
-  intervalCap: 15
+  intervalCap: 20
 })
 
 discordQueue.on('active', () => {
