@@ -33,14 +33,72 @@ class RedisCache extends EventEmitter {
   }
 
   /**
+   * Get the keys of every enqueued payloads
+   */
+  async getEnqueuedPayloadKeys () {
+    const lrange = promisify(this.client.lrange).bind(this.client)
+    const keys = await lrange(this.payloadQueueKey, 0, -1)
+    // Reverse the order since lrange returns it reversed from 0 to -1
+    return keys
+  }
+
+  /**
+   * Get all payload keys whose JSON strings do not exist
+   */
+  async getInvalidPayloadKeys () {
+    const keys = await this.getEnqueuedPayloadKeys()
+    const multi = this.client.multi()
+    // Reverse order since 0 to -1 is reversed
+    for (let i = 0; i < keys.length; ++i) {
+      const key = keys[i]
+      multi.hget(this.payloadHashKey, key)
+    }
+    return new Promise<string[]>((resolve, reject) => {
+      const invalidKeys: string[] = []
+      multi.exec((err, payloadStrings: string[]) => {
+        if (err) {
+          reject(err)
+          return
+        }
+        for (let i = 0; i < payloadStrings.length; ++i) {
+          // The order of the keys are in reverse
+          const payloadKey = keys[i]
+          const payloadJSONString = payloadStrings[i]
+          if (!payloadJSONString) {
+            invalidKeys.push(payloadKey)
+          }
+        }
+        resolve(invalidKeys)
+      })
+    })
+  }
+
+  /**
+   * Delete data associated with all invalid payload keys
+   * @returns Number of deleted payloads
+   */
+  async purgeInvalidPayloadKeys () {
+    const keys = await this.getInvalidPayloadKeys()
+    const multi = this.client.multi()
+    for (let i = 0; i < keys.length; ++i) {
+      const key = keys[i]
+      multi
+        .lrem(this.payloadQueueKey, 1, key)
+        .hdel(this.payloadHashKey, key)
+    }
+    return new Promise((resolve, reject) => {
+      multi.exec((err) => err ? reject(err) : resolve(keys.length))
+    })
+  }
+
+  /**
    * Get all payloads that are still enqueud
    */
   async getEnqueuedPayloads () {
-    const lrange = promisify(this.client.lrange).bind(this.client)
-    const keys = await lrange(this.payloadQueueKey, 0, -1)
+    const keys = await this.getEnqueuedPayloadKeys()
     const multi = this.client.multi()
     // Reverse order since 0 to -1 is reversed
-    for (let i = keys.length - 1; i >= 0; --i) {
+    for (let i = 0; i < keys.length; ++i) {
       const key = keys[i]
       multi.hget(this.payloadHashKey, key)
     }
@@ -50,13 +108,11 @@ class RedisCache extends EventEmitter {
           reject(err)
           return
         }
-        const parsedPayloads = payloadStrings
-          .filter(str => {
-            if (!str) {
-              log.warn(`Invalid payload found`)
-            }
-            return !!str
-          })
+        const validPayloads = payloadStrings.filter(str => str)
+        if (validPayloads.length !== payloadStrings.length) {
+          log.warn(`${payloadStrings.length - validPayloads.length} invalid payload found`)
+        }
+        const parsedPayloads = validPayloads
           .map(str => new Payload(JSON.parse(str)))
         resolve(parsedPayloads)
       })

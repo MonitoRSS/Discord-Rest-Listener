@@ -52,14 +52,76 @@ describe('RedisCache', () => {
         .exec((err) => err ? reject(err) : resolve())
     })
   })
-  describe('getEnqueuedPayloads', () => {
+  describe('getEnqueuedPayloadKeys', () => {
     it('works', async () => {
       await new Promise((resolve, reject) => {
         cache.client.multi()
-          .hset(cache.payloadHashKey, payloadKey, payloadJSON)
-          .rpush(cache.payloadQueueKey, payloadKey)
+          .rpush(cache.payloadQueueKey, 'key1')
+          .rpush(cache.payloadQueueKey, 'key2')
+          .rpush(cache.payloadQueueKey, 'key3')
           .exec((err) => err ? reject(err) : resolve())
       })
+      await expect(cache.getEnqueuedPayloadKeys())
+        .resolves.toEqual(['key1', 'key2', 'key3'])
+    })
+  })
+  describe('getInvalidPayloadKeys', () => {
+    it('works', async () => {
+      const invalidKey = 'invalidkey'
+      const invalidKey2 = 'invalidkey2'
+      await new Promise((resolve, reject) => {
+        cache.client.multi()
+          .hset(cache.payloadHashKey, payloadKey, payloadJSON)
+          .rpush(cache.payloadQueueKey, invalidKey)
+          .rpush(cache.payloadQueueKey, payloadKey)
+          .rpush(cache.payloadQueueKey, invalidKey2)
+          .exec((err) => err ? reject(err) : resolve())
+      })
+      const invalidKeys = await cache.getInvalidPayloadKeys()
+      expect(invalidKeys).toEqual([
+        invalidKey,
+        invalidKey2
+      ])
+    })
+  })
+  describe('purgeInvalidPayloadKeys', () => {
+    it('works', async () => {
+      const invalidKey = 'invalidkey'
+      const invalidKey2 = 'invalidkey2'
+      const lrange = promisify(cache.client.lrange).bind(cache.client)
+      await new Promise((resolve, reject) => {
+        cache.client.multi()
+          .hset(cache.payloadHashKey, payloadKey, payloadJSON)
+          .rpush(cache.payloadQueueKey, invalidKey)
+          .rpush(cache.payloadQueueKey, payloadKey)
+          .rpush(cache.payloadQueueKey, invalidKey2)
+          .exec((err) => err ? reject(err) : resolve())
+      })
+      await expect(lrange(cache.payloadQueueKey, 0, -1))
+        .resolves.toHaveLength(3)
+      await cache.purgeInvalidPayloadKeys()
+      await expect(lrange(cache.payloadQueueKey, 0, -1))
+        .resolves.toHaveLength(1)
+      await expect(lindex(cache.payloadQueueKey, 0))
+        .resolves.toEqual(payloadKey)
+    })
+    it('returns number of deleted elems', async () => {
+      const invalidKey = 'invalidkey'
+      const invalidKey2 = 'invalidkey2'
+      await new Promise((resolve, reject) => {
+        cache.client.multi()
+          .hset(cache.payloadHashKey, payloadKey, payloadJSON)
+          .rpush(cache.payloadQueueKey, invalidKey)
+          .rpush(cache.payloadQueueKey, payloadKey)
+          .rpush(cache.payloadQueueKey, invalidKey2)
+          .exec((err) => err ? reject(err) : resolve())
+      })
+      const invalidKeys = await cache.purgeInvalidPayloadKeys()
+      expect(invalidKeys).toEqual(2)
+    })
+  })
+  describe('getEnqueuedPayloads', () => {
+    it('works', async () => {
       const payload2 = new Payload({
         ...payload.toJSON(),
         token: 'abc',
@@ -71,15 +133,27 @@ describe('RedisCache', () => {
       const payload2JSON = JSON.stringify(payload2.toJSON())
       await new Promise((resolve, reject) => {
         cache.client.multi()
+          .hset(cache.payloadHashKey, payloadKey, payloadJSON)
+          .rpush(cache.payloadQueueKey, payloadKey)
           .hset(cache.payloadHashKey, payload2Key, payload2JSON)
           .rpush(cache.payloadQueueKey, payload2Key)
           .exec((err) => err ? reject(err) : resolve())
       })
       const payloads = await cache.getEnqueuedPayloads()
-      expect(payloads.length).toEqual(2)
+      expect(payloads.findIndex((thisPayload) => thisPayload.article._id === payload.article._id))
+        .toEqual(0)
+      expect(payloads.findIndex((thisPayload) => thisPayload.article._id === payload2.article._id))
+        .toEqual(1)
+    })
+    it('returns instances of payloads', async () => {
+      await new Promise((resolve, reject) => {
+        cache.client.multi()
+          .hset(cache.payloadHashKey, payloadKey, payloadJSON)
+          .rpush(cache.payloadQueueKey, payloadKey)
+          .exec((err) => err ? reject(err) : resolve())
+      })
+      const payloads = await cache.getEnqueuedPayloads()
       expect(payloads.find((thisPayload) => thisPayload.article._id === payload.article._id))
-        .toBeInstanceOf(Payload)
-      expect(payloads.find((thisPayload) => thisPayload.article._id === payload2.article._id))
         .toBeInstanceOf(Payload)
     })
   })

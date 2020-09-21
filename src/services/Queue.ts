@@ -91,6 +91,8 @@ export async function enqueue (payload: Payload, redisCache: RedisCache, orm: Mi
  * will be cached payloads if the service shuts down unexpectedly
  */
 export async function enqueueOldPayloads (redisCache: RedisCache, orm: MikroORM) {
+  const invalidsDeleted = await redisCache.purgeInvalidPayloadKeys()
+  log.info(`Deleted ${invalidsDeleted} invalid payloads`)
   const payloads = await redisCache.getEnqueuedPayloads()
   log.info(`Enqueuing ${payloads.length} previously stored payloads`)
   for (let i = 0; i < payloads.length; ++i) {
