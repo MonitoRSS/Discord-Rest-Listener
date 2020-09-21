@@ -16,7 +16,7 @@ const startTimer: ExtendableTimer = new ExtendableTimer(() => {
 })
 
 /**
- * Parse and execute 10 payloads every 1 second.
+ * Parse and execute 15 payloads every 1 second.
  * This is fine as long as the queue is paused whenever a
  * global rate limit is hit
  */
