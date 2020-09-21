@@ -1,6 +1,7 @@
 import { MikroORM } from "@mikro-orm/core"
 import { Pull } from "zeromq"
 import DeliveryRecord from "../entities/DeliveryRecord"
+import GeneralStat from "../entities/GeneralStat"
 import { enqueueOldPayloads } from "../services/Queue"
 import RedisCache from "../services/RedisCache"
 import config from "./config"
@@ -26,7 +27,7 @@ async function connectToRedis (): Promise<RedisCache> {
 async function setup () {
   log.info('Connecting to Mongo')
   const orm = await MikroORM.init({
-    entities: [DeliveryRecord],
+    entities: [DeliveryRecord, GeneralStat],
     type: 'mongo',
     clientUrl: config.databaseURI,
     ensureIndexes: true
