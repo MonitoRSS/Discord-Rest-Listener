@@ -2,8 +2,15 @@ import { RESTHandler } from '@synzen/discord-rest'
 import config from '../utils/config'
 import log from '../utils/log'
 import Payload from '../utils/Payload'
-const handler = new RESTHandler()
+const handler = new RESTHandler({
+  globalBlockDurationMultiple: 2
+})
+let count = 0
+let maxCount = 0
 
+/**
+ * Log all the important events that might affect this service's performance
+ */
 handler.on('globalRateLimit', (apiRequest, durationMs) => {
   log.warn(`Global rate limit hit for ${apiRequest.toString()} (retry after ${durationMs}ms)`)
 })
@@ -11,6 +18,28 @@ handler.on('globalRateLimit', (apiRequest, durationMs) => {
 handler.on('rateLimit', (apiRequest, durationMs) => {
   log.warn(`Rate limit hit for ${apiRequest.toString()} (retry after ${durationMs})ms`)
 })
+
+handler.on('invalidRequestsThreshold', (threshold) => {
+  log.warn(`${threshold} invalid requests reached, delaying all requests by 10 minutes`)
+})
+
+/**
+ * Events used to track some stats
+ */
+handler.on('active', () => {
+  if (count === 0) {
+    log.info('Queue is active')
+  }
+  count++
+  maxCount = Math.max(maxCount, count)
+})
+
+handler.on('idle', () => {
+  log.info(`Queue finished all tasks (max length reached: ${maxCount})`)
+  maxCount = 0
+  count = 0
+})
+
 
 /**
  * Executes the Discord API request using payload details

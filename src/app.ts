@@ -1,16 +1,13 @@
 import log from './utils/log'
-import { delayQueueBy, enqueue, validatePayload } from './services/Queue'
-import { DiscordRESTHandler } from './services/DiscordRequests'
+import { enqueue, validatePayload } from './services/Queue'
 import setup from './utils/setup'
 import Payload from './utils/Payload'
-let tenMinInvalidRequests = 0
 let tenMinCount = 0
 
 setup().then(async ({redisCache, sock, orm}) => {
   // Log the queue length and payloads received every 10 min
   setInterval(() => {
     log.info(`Number of payloads in the last 10 minutes: ${tenMinCount}`)
-    tenMinInvalidRequests = 0
     tenMinCount = 0
     redisCache.getQueueLength().then((len) => {
       log.info(`Current queue length: ${len}`)
@@ -41,17 +38,3 @@ setup().then(async ({redisCache, sock, orm}) => {
   log.error(err)
 })
 
-// Delay the payload queue whenever a global rate limit is hit
-DiscordRESTHandler.on('globalRateLimit', (_, blockedDurationMs) => {
-  // Delay the queue by 2x the blocked duration from discord for safety
-  const delayDuration = blockedDurationMs * 2
-  delayQueueBy(delayDuration)
-})
-
-DiscordRESTHandler.on('invalidRequest', () => {
-  if (tenMinInvalidRequests++ >= 5000) {
-    log.warn(`${tenMinInvalidRequests} invalid requests reached`)
-    // Halfway to a temporary ban - delay everything by 10 minutes
-    delayQueueBy(1000 * 60 * 10)
-  }
-})

@@ -1,43 +1,11 @@
 import { MikroORM } from '@mikro-orm/core'
 import { Response } from 'node-fetch'
-import PQueue from 'p-queue'
 import { RawPayloadSchema, RawPayloadType } from '../schemas/RawPayload'
 import config from '../utils/config'
-import ExtendableTimer from '../utils/ExtendableTimer'
 import log from '../utils/log'
 import Payload from '../utils/Payload'
 import { executeFetch } from './DiscordRequests'
 import RedisCache from './RedisCache'
-let count = 0
-let maxCount = 0
-const startTimer: ExtendableTimer = new ExtendableTimer(() => {
-  log.info('Restarting queue')
-  discordQueue.start()
-})
-
-/**
- * Parse and execute 15 payloads every 1 second.
- * This is fine as long as the queue is paused whenever a
- * global rate limit is hit
- */
-export const discordQueue = new PQueue({
-  interval: 1000,
-  intervalCap: 20
-})
-
-discordQueue.on('active', () => {
-  if (count === 0) {
-    log.info('Queue is active')
-  }
-  count++
-  maxCount = Math.max(maxCount, count)
-})
-
-discordQueue.on('idle', () => {
-  log.info(`Queue finished all tasks (max length reached: ${maxCount})`)
-  maxCount = 0
-  count = 0
-})
 
 /**
  * Parse a node-fetch non-200-status-code response for the
@@ -65,7 +33,7 @@ export async function enqueue (payload: Payload, redisCache: RedisCache, orm: Mi
   let res: Response
   // Only handle fetch errors here. Other errors should be handled in calling function.
   try {
-    res = await discordQueue.add(() => executeFetch(payload))
+    res = await executeFetch(payload)
   } catch (err) {
     const errorMessage = `Fetch error (${err.message})`
     log.error(errorMessage, {
@@ -113,13 +81,4 @@ export function validatePayload (rawPayload: RawPayloadType) {
   } else {
     return false
   }
-}
-
-/**
- * Blocks all pending API requests by a duration. If there
- * is already a block, it's reset with the time passed in
- */
-export function delayQueueBy (time: number) {
-  discordQueue.pause()
-  startTimer.resetWith(time)
 }
