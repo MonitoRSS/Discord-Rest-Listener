@@ -58,8 +58,10 @@ async function getBadResponseError (res: Response, payload: Payload) {
  * Enqueue a payload to be later parsed for the Discord API request
  * to be sent
  */
-export async function enqueue (payload: Payload, redisCache: RedisCache, orm: MikroORM) {
-  await redisCache.enqueuePayload(payload)
+export async function enqueue (payload: Payload, redisCache: RedisCache, orm: MikroORM, old = false) {
+  if (!old) {
+    await redisCache.enqueuePayload(payload)
+  }
   let res: Response
   // Only handle fetch errors here. Other errors should be handled in calling function.
   try {
@@ -97,7 +99,7 @@ export async function enqueueOldPayloads (redisCache: RedisCache, orm: MikroORM)
   log.info(`Enqueuing ${payloads.length} previously stored payloads`)
   for (let i = 0; i < payloads.length; ++i) {
     const payload = payloads[i]
-    enqueue(payload, redisCache, orm)
+    enqueue(payload, redisCache, orm, true)
   }
 }
 
