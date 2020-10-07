@@ -47,7 +47,7 @@ export async function enqueue (payload: Payload, redisCache: RedisCache, orm: Mi
   
   if (res.ok) {
     await payload.recordSuccess(orm)
-    return
+    return res
   }
   const error = await getBadResponseError(res, payload)
   await payload.recordFailure(orm, error.message)

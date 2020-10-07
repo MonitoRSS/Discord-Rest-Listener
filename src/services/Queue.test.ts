@@ -23,6 +23,19 @@ describe('Queue', () => {
     redisCache.completePayload.mockReset()
   })
   describe('enqueue', () => {
+    it('returns the fetch response on success', async () => {
+      const res = {
+        ok: true
+      } as Response
+      jest.spyOn(DiscordRequests, 'executeFetch')
+        .mockResolvedValue(res)
+      const returned = await enqueue(
+        payload as unknown as Payload,
+        redisCache as unknown as RedisCache,
+        orm as unknown as MikroORM
+      )
+      expect(returned).toEqual(res)
+    })
     describe('redis', () => {
       it('enqueues and dequeues in redis on success', async () => {
         jest.spyOn(DiscordRequests, 'executeFetch')
@@ -70,7 +83,7 @@ describe('Queue', () => {
       })
     })
     describe('payload records', () => {
-      it('records succ  esses', async () => {
+      it('records successes', async () => {
         jest.spyOn(DiscordRequests, 'executeFetch')
         .mockResolvedValue({
           ok: true
