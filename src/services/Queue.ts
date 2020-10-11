@@ -3,7 +3,7 @@ import { Response } from 'node-fetch'
 import { RawPayloadSchema, RawPayloadType } from '../schemas/RawPayload'
 import config from '../utils/config'
 import log from '../utils/log'
-import Payload from '../utils/Payload'
+import PayloadInterface from '../types/PayloadInterface'
 import { executeFetch } from './DiscordRequests'
 import RedisCache from './RedisCache'
 
@@ -12,8 +12,8 @@ import RedisCache from './RedisCache'
  * relevant error. This is usually the error Discord returns
  * from the API, otherwise it's a generic bad status code
  */
-async function getBadResponseError (res: Response, payload: Payload) {
-  const { article, feed } = payload
+async function getBadResponseError (res: Response, payload: PayloadInterface) {
+  const { article, feed } = payload.data
   try {
     const json = await res.json()
     return new Error(`Bad status code ${res.status} for article ${article._id}, feed ${feed._id} (${JSON.stringify(json)})`)
@@ -26,7 +26,7 @@ async function getBadResponseError (res: Response, payload: Payload) {
  * Enqueue a payload to be later parsed for the Discord API request
  * to be sent
  */
-export async function enqueue (payload: Payload, redisCache: RedisCache, orm: MikroORM, old = false) {
+export async function enqueue (payload: PayloadInterface, redisCache: RedisCache, orm: MikroORM, old = false) {
   if (!old) {
     await redisCache.enqueuePayload(payload)
   }

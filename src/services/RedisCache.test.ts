@@ -1,15 +1,15 @@
 import RedisCache from './RedisCache'
 import {promisify} from 'util'
 import config from '../utils/config'
-import Payload from '../utils/Payload'
 import RedisMock from 'redis-mock'
+import PayloadMessage from '../payloads/PayloadMessage'
 
 jest.useFakeTimers()
 
 describe('RedisCache', () => {
   const cache = new RedisCache(config.redis, config.redisPrefix)
   cache.client = RedisMock.createClient()
-  const payload = new Payload({
+  const payload = new PayloadMessage({
     token: 'abc',
     article: {
       _id: 'articleid1'
@@ -122,7 +122,7 @@ describe('RedisCache', () => {
   })
   describe('getEnqueuedPayloads', () => {
     it('works', async () => {
-      const payload2 = new Payload({
+      const payload2 = new PayloadMessage({
         ...payload.toJSON(),
         token: 'abc',
         article: {
@@ -140,9 +140,9 @@ describe('RedisCache', () => {
           .exec((err) => err ? reject(err) : resolve())
       })
       const payloads = await cache.getEnqueuedPayloads()
-      expect(payloads.findIndex((thisPayload) => thisPayload.article._id === payload.article._id))
+      expect(payloads.findIndex(({ data }) => data.article._id === payload.data.article._id))
         .toEqual(0)
-      expect(payloads.findIndex((thisPayload) => thisPayload.article._id === payload2.article._id))
+      expect(payloads.findIndex(({data}) => data.article._id === payload2.data.article._id))
         .toEqual(1)
     })
     it('returns instances of payloads', async () => {
@@ -153,8 +153,8 @@ describe('RedisCache', () => {
           .exec((err) => err ? reject(err) : resolve())
       })
       const payloads = await cache.getEnqueuedPayloads()
-      expect(payloads.find((thisPayload) => thisPayload.article._id === payload.article._id))
-        .toBeInstanceOf(Payload)
+      expect(payloads.find((thisPayload) => thisPayload.data.article._id === payload.data.article._id))
+        .toBeInstanceOf(PayloadMessage)
     })
   })
   describe('enqueuePayload', () => {

@@ -1,12 +1,13 @@
 import { MikroORM } from '@mikro-orm/core'
-import Payload from '../utils/Payload'
 import { enqueue } from './Queue'
 import RedisCache from './RedisCache'
 import * as DiscordRequests from './DiscordRequests'
 import { Response } from 'node-fetch'
+import PayloadInterface from '../types/PayloadInterface'
 
 describe('Queue', () => {
   const payload = {
+    data: {},
     recordSuccess: jest.fn(),
     recordFailure: jest.fn()
   }
@@ -30,7 +31,7 @@ describe('Queue', () => {
       jest.spyOn(DiscordRequests, 'executeFetch')
         .mockResolvedValue(res)
       const returned = await enqueue(
-        payload as unknown as Payload,
+        payload as unknown as PayloadInterface,
         redisCache as unknown as RedisCache,
         orm as unknown as MikroORM
       )
@@ -43,7 +44,7 @@ describe('Queue', () => {
             ok: true
           } as Response)
         await enqueue(
-          payload as unknown as Payload,
+          payload as unknown as PayloadInterface,
           redisCache as unknown as RedisCache,
           orm as unknown as MikroORM
         )
@@ -56,7 +57,7 @@ describe('Queue', () => {
         jest.spyOn(DiscordRequests, 'executeFetch')
           .mockRejectedValue(new Error('network err'))
         await enqueue(
-          payload as unknown as Payload,
+          payload as unknown as PayloadInterface,
           redisCache as unknown as RedisCache,
           orm as unknown as MikroORM
         )
@@ -72,7 +73,7 @@ describe('Queue', () => {
             status: 400
           } as Response)
         await enqueue(
-          payload as unknown as Payload,
+          payload as unknown as PayloadInterface,
           redisCache as unknown as RedisCache,
           orm as unknown as MikroORM
         )
@@ -89,7 +90,7 @@ describe('Queue', () => {
           ok: true
         } as Response)
       await enqueue(
-        payload as unknown as Payload,
+        payload as unknown as PayloadInterface,
         redisCache as unknown as RedisCache,
         orm as unknown as MikroORM
       )
@@ -103,7 +104,7 @@ describe('Queue', () => {
           status: 400
         } as Response)
       await enqueue(
-        payload as unknown as Payload,
+        payload as unknown as PayloadInterface,
         redisCache as unknown as RedisCache,
         orm as unknown as MikroORM
       )
@@ -117,7 +118,7 @@ describe('Queue', () => {
           status: 400
         } as Response)
       await enqueue(
-        payload as unknown as Payload,
+        payload as unknown as PayloadInterface,
         redisCache as unknown as RedisCache,
         orm as unknown as MikroORM
       )
@@ -129,7 +130,7 @@ describe('Queue', () => {
       jest.spyOn(DiscordRequests, 'executeFetch')
         .mockRejectedValue(timeoutError)
       await enqueue(
-        payload as unknown as Payload,
+        payload as unknown as PayloadInterface,
         redisCache as unknown as RedisCache,
         orm as unknown as MikroORM
       )

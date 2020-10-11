@@ -1,12 +1,12 @@
 import { MikroORM } from "@mikro-orm/core"
 import DeliveryRecord from "../entities/DeliveryRecord"
 import GeneralStat from "../entities/GeneralStat"
-import Payload from "./Payload"
-import testConfig from "./testConfig"
+import PayloadMessage from "./PayloadMessage"
+import testConfig from "../utils/testConfig"
 
 jest.useFakeTimers()
 
-describe('Payload', () => {
+describe('PayloadMessage', () => {
   let orm: MikroORM
   beforeAll(async () => {
     orm = await MikroORM.init({
@@ -24,7 +24,7 @@ describe('Payload', () => {
   })
   describe('recordSuccess', () => {
     it('works', async () => {
-      const payload = new Payload({
+      const payload = new PayloadMessage({
         token: 'abc',
         article: {
           _id: 'articleid'
@@ -41,20 +41,20 @@ describe('Payload', () => {
       })
       await payload.recordSuccess(orm)
       const found = await orm.em.getRepository(DeliveryRecord).findOne({
-        articleID: payload.article._id
+        articleID: payload.data.article._id
       })
       expect(found).toBeDefined()
       expect(found).toEqual({
-        articleID: payload.article._id,
-        feedURL: payload.feed.url,
-        channel: payload.feed.channel,
+        articleID: payload.data.article._id,
+        feedURL: payload.data.feed.url,
+        channel: payload.data.feed.channel,
         delivered: true,
         addedAt: expect.any(Date),
         _id: expect.any(Object)
       })
     })
     it('adds 1 to general stats for articles sent', async () => {
-      const payload = new Payload({
+      const payload = new PayloadMessage({
         token: 'abc',
         article: {
           _id: 'articleid'
@@ -78,7 +78,7 @@ describe('Payload', () => {
   })
   describe('recordFailure', () => {
     it('works', async () => {
-      const payload = new Payload({
+      const payload = new PayloadMessage({
         token: 'abc',
         article: {
           _id: 'articleid'
@@ -96,13 +96,13 @@ describe('Payload', () => {
       const errorMessage = 'record failure error message'
       await payload.recordFailure(orm, errorMessage)
       const found = await orm.em.getRepository(DeliveryRecord).findOne({
-        articleID: payload.article._id
+        articleID: payload.data.article._id
       })
       expect(found).toBeDefined()
       expect(found).toEqual({
-        articleID: payload.article._id,
-        feedURL: payload.feed.url,
-        channel: payload.feed.channel,
+        articleID: payload.data.article._id,
+        feedURL: payload.data.feed.url,
+        channel: payload.data.feed.channel,
         delivered: false,
         addedAt: expect.any(Date),
         _id: expect.any(Object),
@@ -124,19 +124,21 @@ describe('Payload', () => {
         method: 'apimethod',
         url: 'apiurl'
       }
-      const payload = new Payload({
-        token: 'abc',
+      const token = 'abc'
+      const payload = new PayloadMessage({
+        token,
         article,
         feed,
         api
       })
-      payload.article = article
-      payload.feed = feed
-      payload.api = api
+      payload.data.article = article
+      payload.data.feed = feed
+      payload.data.api = api
       expect(payload.toJSON()).toEqual({
+        token,
         article,
         feed,
-        api
+        api,
       })
     })
   })

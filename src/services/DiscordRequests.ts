@@ -1,7 +1,7 @@
 import { RESTHandler } from '@synzen/discord-rest'
 import config from '../utils/config'
 import log from '../utils/log'
-import Payload from '../utils/Payload'
+import PayloadInterface from '../types/PayloadInterface'
 const handler = new RESTHandler({
   globalBlockDurationMultiple: 2
 })
@@ -44,8 +44,8 @@ handler.on('idle', () => {
 /**
  * Executes the Discord API request using payload details
  */
-export function executeFetch(payload: Payload) {
-  const { method, body, url } = payload.api
+export function executeFetch(payload: PayloadInterface) {
+  const { method, body, url } = payload.data.api
   return handler.fetch(url, {
     method,
     headers: {

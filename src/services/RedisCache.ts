@@ -2,7 +2,8 @@ import redis from 'redis'
 import { EventEmitter } from 'events'
 import { promisify } from 'util'
 import log from '../utils/log'
-import Payload from '../utils/Payload'
+import PayloadInterface from '../types/PayloadInterface'
+import PayloadMessage from '../payloads/PayloadMessage'
 
 class RedisCache extends EventEmitter {
   client: redis.RedisClient
@@ -27,8 +28,8 @@ class RedisCache extends EventEmitter {
     return `${this.prefix}payload_queue`
   }
 
-  getPayloadElementKey (payload: Payload) {
-    const { feed, article } = payload
+  getPayloadElementKey (payload: PayloadInterface) {
+    const { feed, article } = payload.data
     return `${this.prefix}${feed.channel}_${article._id}`
   }
 
@@ -102,7 +103,7 @@ class RedisCache extends EventEmitter {
       const key = keys[i]
       multi.hget(this.payloadHashKey, key)
     }
-    return new Promise<Payload[]>((resolve, reject) => {
+    return new Promise<PayloadInterface[]>((resolve, reject) => {
       multi.exec((err, payloadStrings: string[]) => {
         if (err) {
           reject(err)
@@ -113,7 +114,7 @@ class RedisCache extends EventEmitter {
           log.warn(`${payloadStrings.length - validPayloads.length} invalid payload found`)
         }
         const parsedPayloads = validPayloads
-          .map(str => new Payload(JSON.parse(str)))
+          .map(str => new PayloadMessage(JSON.parse(str)))
         resolve(parsedPayloads)
       })
     })
@@ -123,7 +124,7 @@ class RedisCache extends EventEmitter {
    * Enqueue a payload within redis to be later dequeued
    * on a timer.
    */
-  async enqueuePayload (payload: Payload) {
+  async enqueuePayload (payload: PayloadInterface) {
     const dataKey = this.getPayloadElementKey(payload)
     const data = JSON.stringify(payload.toJSON())
     await new Promise((resolve, reject) => {
@@ -147,7 +148,7 @@ class RedisCache extends EventEmitter {
    * Complete a payload and purge its data from Redis.
    * This is called after a payload has finished processing.
    */
-  async completePayload (payload: Payload) {
+  async completePayload (payload: PayloadInterface) {
     const dataKey = this.getPayloadElementKey(payload)
     await new Promise<string|null>((resolve, reject) => {
       this.client.multi()

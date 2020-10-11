@@ -1,10 +1,10 @@
 import log from './utils/log'
 import { enqueue, validatePayload } from './services/Queue'
 import setup from './utils/setup'
-import Payload from './utils/Payload'
 import RedisCache from './services/RedisCache'
 import { MikroORM } from '@mikro-orm/core'
 import { Pull } from 'zeromq'
+import PayloadMessage from './payloads/PayloadMessage'
 let tenMinCount = 0
 
 /**
@@ -22,7 +22,6 @@ function setupLogTimers (redisCache: RedisCache) {
   }, 1000 * 60 * 10)
 }
 
-
 async function handleIncomingPayloads (orm: MikroORM, redisCache: RedisCache, sock: Pull) {
   for await (const [msg] of sock) {
     tenMinCount++
@@ -35,7 +34,7 @@ async function handleIncomingPayloads (orm: MikroORM, redisCache: RedisCache, so
       continue
     }
     // Enqueue the payload
-    const parsedPayload = new Payload(rawPayload)
+    const parsedPayload = new PayloadMessage(rawPayload)
     try {
       await enqueue(parsedPayload, redisCache, orm)
     } catch (err) {
