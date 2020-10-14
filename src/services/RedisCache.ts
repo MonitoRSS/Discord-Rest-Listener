@@ -111,7 +111,8 @@ class RedisCache extends EventEmitter {
         }
         const validPayloads = payloadStrings.filter(str => str)
         if (validPayloads.length !== payloadStrings.length) {
-          log.warn(`${payloadStrings.length - validPayloads.length} invalid payload found`)
+          const invalidCount = payloadStrings.length - validPayloads.length
+          log.warn(`${invalidCount} invalid payload found while getting enqueued payloads`)
         }
         const parsedPayloads = validPayloads
           .map(str => new PayloadMessage(JSON.parse(str)))
