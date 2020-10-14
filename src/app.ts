@@ -5,6 +5,9 @@ import RedisCache from './services/RedisCache'
 import { MikroORM } from '@mikro-orm/core'
 import { Pull } from 'zeromq'
 import PayloadMessage from './payloads/PayloadMessage'
+import createPostActionPayloads from './utils/createPostActionPayloads'
+import { RawPayloadType } from './schemas/RawPayload'
+import { Response } from 'node-fetch'
 let tenMinCount = 0
 
 /**
@@ -22,10 +25,26 @@ function setupLogTimers (redisCache: RedisCache) {
   }, 1000 * 60 * 10)
 }
 
+async function handlePostActions (orm: MikroORM, redisCache: RedisCache, rawPayload: RawPayloadType, res: Response) {
+  try {
+    const payloads = await createPostActionPayloads(rawPayload, res)
+    const results = await Promise.allSettled(payloads.map(p => enqueue(p, redisCache, orm)))
+    results.forEach(result => {
+      if (result.status === 'rejected') {
+        log.error(`Failed to enqueue post action (${result.reason})`, {
+          rawPayload,
+        })
+      }
+    })
+  } catch (err) {
+    log.error(`Failed to create post action payloads (${err.message})`)
+  }
+}
+
 async function handleIncomingPayloads (orm: MikroORM, redisCache: RedisCache, sock: Pull) {
   for await (const [msg] of sock) {
     tenMinCount++
-    const rawPayload = JSON.parse(msg.toString())
+    const rawPayload: RawPayloadType = JSON.parse(msg.toString())
     // If it's an invalid payload, log and ignore
     if (!validatePayload(rawPayload)) {
       log.warn(`Invalid rawPayload received`, {
@@ -36,7 +55,11 @@ async function handleIncomingPayloads (orm: MikroORM, redisCache: RedisCache, so
     // Enqueue the payload
     const parsedPayload = new PayloadMessage(rawPayload)
     try {
-      await enqueue(parsedPayload, redisCache, orm)
+      const res = await enqueue(parsedPayload, redisCache, orm)
+      // The response only exists if it was a success
+      if (res) {
+        handlePostActions(orm, redisCache, rawPayload, res)
+      }
     } catch (err) {
       log.error(`Enqueue error (${err.message})`, {
         rawPayload
