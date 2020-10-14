@@ -57,18 +57,35 @@ export async function enqueue (payload: PayloadInterface, redisCache: RedisCache
 }
 
 /**
- * Get all cached payloads from Redis and enqueue them. There
- * will be cached payloads if the service shuts down unexpectedly
+ * Remove all payloads in the queue that are missing their associated JSON data
+ */
+export async function purgePayloads (redisCache: RedisCache) {
+  const invalidsDeleted = await redisCache.purgeInvalidPayloadKeys()
+  return invalidsDeleted
+}
+
+/**
+ * Gets all the current payloads in the queue and enqueues them. This should NOT be run while
+ * the REST Handler is active, otherwise duplicate payloads will be enqueued in memory
  */
 export async function enqueueOldPayloads (redisCache: RedisCache, orm: MikroORM) {
-  const invalidsDeleted = await redisCache.purgeInvalidPayloadKeys()
-  log.info(`Deleted ${invalidsDeleted} invalid payloads`)
   const payloads = await redisCache.getEnqueuedPayloads()
-  log.info(`Enqueuing ${payloads.length} previously stored payloads`)
   for (let i = 0; i < payloads.length; ++i) {
     const payload = payloads[i]
     enqueue(payload, redisCache, orm, true)
   }
+  return payloads.length
+}
+
+/**
+ * Get all cached payloads from Redis and enqueue them. There
+ * will be cached payloads if the service shuts down unexpectedly.
+ */
+export async function purgeAndEnqueueOldPayloads (redisCache: RedisCache, orm: MikroORM) {
+  const invalidsDeleted = await purgePayloads(redisCache)
+  log.info(`Deleted ${invalidsDeleted} invalid payloads`)
+  const enqueued = await enqueueOldPayloads(redisCache, orm)
+  log.info(`Enqueuing ${enqueued} previously stored payloads`)
 }
 
 /**

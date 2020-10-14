@@ -2,7 +2,7 @@ import { MikroORM } from "@mikro-orm/core"
 import { Pull } from "zeromq"
 import DeliveryRecord from "../entities/DeliveryRecord"
 import GeneralStat from "../entities/GeneralStat"
-import { enqueueOldPayloads } from "../services/Queue"
+import { purgeAndEnqueueOldPayloads } from "../services/Queue"
 import RedisCache from "../services/RedisCache"
 import config from "./config"
 import log from "./log"
@@ -37,7 +37,7 @@ async function setup () {
   const redisCache = await connectToRedis() 
   log.info('Redis connected, enqueuing old payloads')
   // Handle old payloads
-  await enqueueOldPayloads(redisCache, orm)
+  await purgeAndEnqueueOldPayloads(redisCache, orm)
   // Start accepting new payloads
   const sock = await createConsumer()
   log.info(`Worker connected to ${config.bindingAddress}, setting up health check`)
