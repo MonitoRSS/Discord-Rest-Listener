@@ -23,6 +23,13 @@ handler.on('invalidRequestsThreshold', (threshold) => {
   log.warn(`${threshold} invalid requests reached, delaying all requests by 10 minutes`)
 })
 
+handler.on('longLivedRequest', (longLivedRequest) => {
+  const { request } = longLivedRequest
+  const finished = longLivedRequest.hasFinishedRequest()
+  const bucketUnblockTime = longLivedRequest.getBucketUnblockTime()
+  log.warn(`Detected long-lived request ${request.toString()}. Finished: ${finished}, bucket unblock time: ${bucketUnblockTime}`)
+})
+
 /**
  * Events used to track some stats
  */
