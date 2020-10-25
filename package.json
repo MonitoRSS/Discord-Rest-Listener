@@ -1,6 +1,6 @@
 {
   "name": "message-queue",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "",
   "main": "build/app.js",
   "scripts": {
