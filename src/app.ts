@@ -54,18 +54,17 @@ async function handleIncomingPayloads (orm: MikroORM, redisCache: RedisCache, so
     }
     // Enqueue the payload
     const parsedPayload = new PayloadMessage(rawPayload)
-    try {
-      const res = await enqueue(parsedPayload, redisCache, orm)
-      // The response only exists if it was a success
-      if (res) {
-        handlePostActions(orm, redisCache, rawPayload, res)
-      }
-    } catch (err) {
-      log.error(`Enqueue error (${err.message})`, {
-        rawPayload
+    enqueue(parsedPayload, redisCache, orm)
+      .then((res) => {
+        if (res) {
+          handlePostActions(orm, redisCache, rawPayload, res)
+        }
       })
-    }
-      
+      .catch((err) => {
+        log.error(`Enqueue error (${err.message})`, {
+          rawPayload
+        })
+      })
   }
 }
 
