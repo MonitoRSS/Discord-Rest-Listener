@@ -21,6 +21,10 @@ type DeliveryDetails = {
     expireAfterSeconds: 60 * 60 * 24 * 3
   }
 })
+@Index({
+  properties: ['comment'],
+  type: 'text'
+})
 class DeliveryRecord {
 
   @PrimaryKey()
