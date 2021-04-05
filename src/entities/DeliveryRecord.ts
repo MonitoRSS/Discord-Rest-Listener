@@ -1,13 +1,5 @@
 import { Entity, Index, PrimaryKey, Property } from "@mikro-orm/core";
 import { ObjectId } from '@mikro-orm/mongodb'
-import { RawPayloadType } from "../schemas/RawPayload";
-
-type DeliveryDetails = {
-  article: RawPayloadType['article'],
-  feed: RawPayloadType['feed'],
-  channel: string,
-  delivered: true
-}
 
 @Entity({
   collection: 'delivery_records_service'
@@ -48,7 +40,15 @@ class DeliveryRecord {
   @Property()
   addedAt = new Date()
 
-  constructor(payload: RawPayloadType, delivered: boolean) {
+  constructor(payload: {
+    article: {
+      _id: string,
+    },
+    feed: {
+      url: string,
+      channel: string,
+    }
+  }, delivered: boolean) {
     const { article, feed } = payload
     this.articleID = article._id
     this.feedURL = feed.url
