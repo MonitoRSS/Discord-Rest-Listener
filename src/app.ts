@@ -12,27 +12,14 @@ type ArticleMeta = {
   channel: string
 }
 
-const formatArticleMetaToRecord = (meta: ArticleMeta) => {
-  const { articleID, channel, feedURL } = meta;
-  return {
-    article: {
-      _id: articleID
-    },
-    feed: {
-      url: feedURL,
-      channel,
-    },
-  }
-}
-
 const recordSuccess = async (orm: MikroORM, articleMeta: ArticleMeta) => {
-  const record = new DeliveryRecord(formatArticleMetaToRecord(articleMeta), true)
+  const record = new DeliveryRecord(articleMeta, true)
   await orm.em.nativeInsert(record)
   await GeneralStat.increaseNumericStat(orm, GeneralStat.keys.ARTICLES_SENT)
 }
 
 const recordFailureRecord = async (orm: MikroORM, articleMeta: ArticleMeta, errorMessage: string) => {
-  const record = new DeliveryRecord(formatArticleMetaToRecord(articleMeta), false)
+  const record = new DeliveryRecord(articleMeta, false)
   record.comment = errorMessage
   await orm.em.nativeInsert(record)
 }

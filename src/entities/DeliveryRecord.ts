@@ -40,19 +40,15 @@ class DeliveryRecord {
   @Property()
   addedAt = new Date()
 
-  constructor(payload: {
-    article: {
-      _id: string,
-    },
-    feed: {
-      url: string,
-      channel: string,
-    }
+  constructor(data: {
+    articleID: string,
+    feedURL: string,
+    channel: string,
   }, delivered: boolean) {
-    const { article, feed } = payload
-    this.articleID = article._id
-    this.feedURL = feed.url
-    this.channel = feed.channel
+    const { articleID, channel, feedURL } = data
+    this.articleID = articleID
+    this.feedURL = feedURL
+    this.channel = channel
     this.delivered = delivered
   }
 }
