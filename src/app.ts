@@ -29,6 +29,7 @@ setup().then((initializedData) => {
   const producer = new RESTConsumer(config.redis, `Bot ${config.token}`)
 
   producer.queue.on('completed', async (job, result: JobResponse<Record<string, unknown>>) => {
+    log.info('Queue complete')
     await recordSuccess(orm, job.data.meta)
     if (result.status !== 200) {
       await recordFailureRecord(orm, job.data.meta, `Bad status code (${result.status}) | ${JSON.stringify(result.body)}`)
@@ -53,6 +54,7 @@ setup().then((initializedData) => {
   producer.handler.on('invalidRequestsThreshold', (threshold) => {
     log.warn(`${threshold} invalid requests reached, delaying all requests by 10 minutes`)
   })
+  log.info('Ready')
 }).catch(err => {
   log.error(err)
 })
