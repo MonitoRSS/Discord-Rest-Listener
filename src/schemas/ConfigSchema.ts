@@ -3,7 +3,7 @@ import * as z from 'zod'
 export const ConfigSchema = z.object({
   token: z.string(),
   databaseURI: z.string(),
-  bindingAddress: z.string(),
+  httpPort: z.number(),
   redis: z.string(),
   redisPrefix: z.string()
 })

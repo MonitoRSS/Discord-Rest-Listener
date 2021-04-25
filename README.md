@@ -5,11 +5,12 @@ A queue that takes incoming Discord API requests (that are messages sent to serv
 This is specially designed for https://github.com/synzen/MonitoRSS. For more information on this service, see [the blog post](https://medium.com/@mtan9558/scaling-message-delivery-of-a-discord-rss-bot-a6b0c460a923).
 
 A config file should be made in the root directory.
+
 ```json
 {
   "token": "",
-  "bindingAddress": "tcp://127.0.0.1:3000",
   "redis": "",
+  "httpPort": 8081,
   "databaseURI": "mongodb://localhost/rss",
   "redisPrefix": "mrss_"
 }

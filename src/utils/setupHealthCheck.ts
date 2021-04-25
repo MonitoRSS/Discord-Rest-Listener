@@ -1,6 +1,5 @@
 import express from 'express'
 import config from './config'
-import { URL } from 'url'
 import log from './log'
 import expressWinston from 'express-winston'
 
@@ -18,10 +17,8 @@ function setupHealthCheck () {
     res.status(200).end()
   })
 
-  const address = new URL(config.bindingAddress)
-  const port = Number(address.port) + 1
-  app.listen(port)
-  return port
+  app.listen(config.httpPort)
+  return config.httpPort
 }
 
 export default setupHealthCheck
