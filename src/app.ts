@@ -1,7 +1,7 @@
 import log from './utils/log'
 import setup from './utils/setup'
 import { MikroORM } from '@mikro-orm/core'
-import { RESTConsumer, JobResponse } from '../../discord-rest/dist'
+import { RESTConsumer, JobResponse } from '@synzen/discord-rest'
 import config from './utils/config'
 import DeliveryRecord from './entities/DeliveryRecord'
 import GeneralStat from './entities/GeneralStat'
