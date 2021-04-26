@@ -26,7 +26,10 @@ const recordFailureRecord = async (orm: MikroORM, articleMeta: ArticleMeta, erro
 
 setup().then((initializedData) => {
   const { orm } = initializedData
-  const producer = new RESTConsumer(config.redis, `Bot ${config.token}`)
+  const producer = new RESTConsumer(config.redis, `Bot ${config.token}`, {
+    // Normally 50, but other apps are also making requests so we stay conservative
+    maxRequestsPerSecond: 20
+  })
 
   producer.queue.on('completed', async (job, result: JobResponse<Record<string, unknown>>) => {
     log.info('Queue complete')
