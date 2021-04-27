@@ -32,6 +32,7 @@ setup().then((initializedData) => {
   })
 
   producer.queue.on('completed', async (job, result: JobResponse<Record<string, unknown>>) => {
+    log.debug('Job completed', result)
     await recordSuccess(orm, job.data.meta)
     if (result.status !== 200) {
       await recordFailureRecord(orm, job.data.meta, `Bad status code (${result.status}) | ${JSON.stringify(result.body)}`)
@@ -39,7 +40,7 @@ setup().then((initializedData) => {
   })
 
   producer.queue.on('drained', async () => {
-    log.info('Queue drained')
+    log.debug('Queue drained')
   })
 
   producer.queue.on('failed', async (job, error) => {
