@@ -17,7 +17,7 @@ function setupHealthCheck () {
     res.status(200).end()
   })
 
-  app.listen(config.httpPort)
+  app.listen(config.httpPort + 1)
   return config.httpPort
 }
 
