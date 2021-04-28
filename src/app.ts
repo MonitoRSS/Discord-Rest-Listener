@@ -44,7 +44,8 @@ setup().then((initializedData) => {
   })
 
   producer.queue.on('failed', async (job, error) => {
-    await recordFailureRecord(orm, job.data.meta, error.message)
+    log.error(`Job failed: ${error.message}`)
+    await recordFailureRecord(orm, job.data.meta, `Job failed: ${error.message}`)
   })
 
   /**
