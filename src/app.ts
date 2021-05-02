@@ -12,13 +12,13 @@ type ArticleMeta = {
   channel: string
 }
 
-const recordSuccess = async (orm: MikroORM, articleMeta: ArticleMeta) => {
+const recordArticleSuccess = async (orm: MikroORM, articleMeta: ArticleMeta) => {
   const record = new DeliveryRecord(articleMeta, true)
   await orm.em.nativeInsert(record)
   await GeneralStat.increaseNumericStat(orm, GeneralStat.keys.ARTICLES_SENT)
 }
 
-const recordFailureRecord = async (orm: MikroORM, articleMeta: ArticleMeta, errorMessage: string) => {
+const recordArticleFailure = async (orm: MikroORM, articleMeta: ArticleMeta, errorMessage: string) => {
   const record = new DeliveryRecord(articleMeta, false)
   record.comment = errorMessage
   await orm.em.nativeInsert(record)
@@ -33,9 +33,13 @@ setup().then((initializedData) => {
 
   producer.queue.on('completed', async (job, result: JobResponse<Record<string, unknown>>) => {
     log.debug('Job completed', result)
-    await recordSuccess(orm, job.data.meta)
+    // This was a feed article
+    if (!job.data.meta?.articleID) {
+      return
+    }
+    await recordArticleSuccess(orm, job.data.meta)
     if (!result.status.toString().startsWith('2')) {
-      await recordFailureRecord(orm, job.data.meta, `Bad status code (${result.status}) | ${JSON.stringify(result.body)}`)
+      await recordArticleFailure(orm, job.data.meta, `Bad status code (${result.status}) | ${JSON.stringify(result.body)}`)
     }
   })
 
@@ -45,7 +49,10 @@ setup().then((initializedData) => {
 
   producer.queue.on('failed', async (job, error) => {
     log.error(`Job failed: ${error.message}`)
-    await recordFailureRecord(orm, job.data.meta, `Job failed: ${error.message}`)
+    if (!job.data.meta?.articleID) {
+      return
+    }
+    await recordArticleFailure(orm, job.data.meta, `Job failed: ${error.message}`)
   })
 
   /**
