@@ -29,7 +29,7 @@ setup().then((initializedData) => {
   const producer = new RESTConsumer(config.redis, `Bot ${config.token}`, {
     // Normally 50, but other apps are also making requests so we stay conservative
     maxRequestsPerSecond: 30
-  })
+  }, 9999)
 
   producer.queue.on('completed', async (job, result: JobResponse<Record<string, unknown>>) => {
     log.debug('Job completed', result)
@@ -68,6 +68,10 @@ setup().then((initializedData) => {
 
   producer.handler.on('invalidRequestsThreshold', (threshold) => {
     log.warn(`${threshold} invalid requests reached, delaying all requests by 10 minutes`)
+  })
+
+  producer.handler.on('cloudflareRateLimit', (apiRequest, durationMs) => {
+    log.warn(`Cloudflare rate limit hit for ${apiRequest.toString()} (retry after ${durationMs})ms`)
   })
   log.info('Ready')
 }).catch(err => {
