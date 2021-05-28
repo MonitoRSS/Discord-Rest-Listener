@@ -31,6 +31,9 @@ setup().then((initializedData) => {
     maxRequestsPerSecond: 25
   }, 9999)
 
+  producer.queue.resume(false)
+  producer.queue.resume(true)
+
   producer.queue.on('completed', async (job, result: JobResponse<Record<string, unknown>>) => {
     log.debug('Job completed', result)
     // This was a feed article
