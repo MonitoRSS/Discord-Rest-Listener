@@ -4,9 +4,9 @@ import setup from './utils/setup'
 import { RESTProducer } from '@synzen/discord-rest'
 import config from './utils/config'
 
-setup().then(async () => {
+setup(false).then(async () => {
   const producer = new RESTProducer(config.redis)
-
+  log.info('Ready')
   // @ts-ignore
   const jobs = await producer.queue.getJobs(['active']);
   // @ts-ignore
@@ -17,7 +17,7 @@ setup().then(async () => {
           console.log(result.reason)
       }
   })
-  log.info('Ready')
+  process.exit()
 }).catch(err => {
   log.error(err)
 })

@@ -9,7 +9,7 @@ import log from "./log"
 import setupHealthCheck from "./setupHealthCheck"
 
 
-async function setup () {
+async function setup (withHealthCheck = true) {
   log.info('Connecting to Mongo')
   const orm = await MikroORM.init({
     entities: [DeliveryRecord, GeneralStat],
@@ -18,8 +18,10 @@ async function setup () {
     ensureIndexes: true
   })
   log.info('Connected to Mongo')
-  const healthCheckPort = await setupHealthCheck()
-  log.info(`Health check set up at HTTP port ${healthCheckPort}`)
+  if (withHealthCheck) {
+    const healthCheckPort = await setupHealthCheck()
+    log.info(`Health check set up at HTTP port ${healthCheckPort}`)
+  }
   return {
     orm,
   }
