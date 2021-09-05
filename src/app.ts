@@ -28,8 +28,8 @@ setup().then((initializedData) => {
   const { orm } = initializedData
   const producer = new RESTConsumer(config.redis, `Bot ${config.token}`, {
     // Normally 50, but other apps are also making requests so we stay conservative
-    maxRequestsPerSecond: 15
-  }, 9999)
+    maxRequestsPerSecond: 20
+  }, 2000)
 
   producer.queue.on('completed', async (job, result: JobResponse<Record<string, unknown>>) => {
     log.debug('Job completed', result)
