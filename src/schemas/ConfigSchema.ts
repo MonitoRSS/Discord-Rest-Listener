@@ -5,7 +5,9 @@ export const ConfigSchema = z.object({
   databaseURI: z.string(),
   httpPort: z.number(),
   redis: z.string(),
-  redisPrefix: z.string()
+  redisPrefix: z.string(),
+  concurrencyLimit: z.number(),
+  maxRequestsPerSecond: z.number()
 })
 
 export type ConfigType = z.infer<typeof ConfigSchema>
