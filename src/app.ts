@@ -1,4 +1,4 @@
-import log from './utils/log'
+import log, { logDatadog } from './utils/log'
 import setup from './utils/setup'
 import { MikroORM } from '@mikro-orm/core'
 import { RESTConsumer, JobResponse } from '@synzen/discord-rest'
@@ -59,7 +59,12 @@ setup().then((initializedData) => {
    * Log all the important events that might affect this service's performance
    */
   producer.handler.on('globalRateLimit', (apiRequest, durationMs) => {
-    log.warn(`Global rate limit hit for ${apiRequest.toString()} (retry after ${durationMs}ms)`)
+    const errorMessage = `Global rate limit hit for ${apiRequest.toString()} (retry after ${durationMs}ms)`
+    logDatadog('warn', errorMessage, {
+      apiRequest,
+      durationMs
+    })
+    log.warn(errorMessage)
   })
 
   producer.handler.on('rateLimit', (apiRequest, durationMs) => {
@@ -71,7 +76,12 @@ setup().then((initializedData) => {
   })
 
   producer.handler.on('cloudflareRateLimit', (apiRequest, durationMs) => {
-    log.warn(`Cloudflare rate limit hit for ${apiRequest.toString()} (retry after ${durationMs})ms`)
+    const errorMessage = `Cloudflare rate limit hit for ${apiRequest.toString()} (retry after ${durationMs})ms`
+    logDatadog('warn', errorMessage, {
+      apiRequest,
+      durationMs
+    })
+    log.warn(errorMessage)
   })
   log.info('Ready')
 }).catch(err => {
