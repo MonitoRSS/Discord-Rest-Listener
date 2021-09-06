@@ -1,6 +1,6 @@
 # Discord-REST-Queue
 
-A queue that takes incoming Discord API requests (that are messages sent to servers), and then magically handles all rate limiting information that Discord returns. The bot used with this queue is guaranteed to **never** get banned (but the length of the queue may get too long under extremely heavy loads).
+A queue that takes incoming Discord API requests (that are messages sent to servers), and then magically handles all rate limiting information that Discord returns.
 
 This is specially designed for https://github.com/synzen/MonitoRSS.
 
@@ -12,11 +12,13 @@ A config file should be made in the root directory.
   "redis": "",
   "httpPort": 8081,
   "databaseURI": "mongodb://localhost/rss",
-  "redisPrefix": "mrss_"
+  "redisPrefix": "mrss_",
+  "concurrencyLimit": 5000,
+  "maxRequestsPerSecond": 25
 }
 ```
 
-A producer should connect to the binding address above using [zeromq](https://zeromq.org/). This producer should send JSON buffers in the format of:
+This producer should send JSON buffers in the format of:
 
 ```js
 {
