@@ -8,6 +8,7 @@ export const ConfigSchema = z.object({
   redisPrefix: z.string(),
   concurrencyLimit: z.number(),
   maxRequestsPerSecond: z.number(),
+  requestTimeout: z.number(),
   datadog: z.object({
     apiKey: z.string(),
     host: z.string(),
