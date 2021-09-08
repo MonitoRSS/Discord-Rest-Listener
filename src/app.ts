@@ -34,6 +34,10 @@ setup().then((initializedData) => {
 
   producer.queue.on('completed', async (job, result: JobResponse<Record<string, unknown>>) => {
     log.debug('Job completed', result)
+    logDatadog('info', `Article delivered`, {
+      route: job.data.route,
+      ...(job.finishedOn && { duration: job.finishedOn - job.timestamp }),
+    })
     // This was a feed article
     if (!job.data.meta?.articleID) {
       return
