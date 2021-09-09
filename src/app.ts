@@ -37,6 +37,7 @@ setup().then((initializedData) => {
     logDatadog('info', `Article delivered`, {
       route: job.data.route,
       ...(job.finishedOn && { duration: job.finishedOn - job.timestamp }),
+      ...(job.data.meta?.feedURL && { feedURL: job.data.meta?.feedURL }),
     })
     // This was a feed article
     if (!job.data.meta?.articleID) {
