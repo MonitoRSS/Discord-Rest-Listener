@@ -7,8 +7,7 @@ import config from './utils/config'
 setup(false).then(async () => {
   const producer = new RESTProducer(config.redis)
   log.info('Ready')
-  // @ts-ignore
-  const jobs = await producer.getJobs(['waiting'], 0, 500);
+  const jobs = await producer['queue'].getJobs(['waiting'], 0, 500);
   // @ts-ignore
   const results = await Promise.allSettled(jobs.map(async (job) => job.promote()))
   // @ts-ignore
