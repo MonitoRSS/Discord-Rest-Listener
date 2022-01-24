@@ -17,28 +17,33 @@ setup(false).then(async () => {
   // @ts-ignore
   for (let i = 0; i < jobs.length; ++i) {
     const job = jobs[i]
-    const feedURL = job.data.meta.feedURL
-    const channel = job.data.meta.channel
-    
-    if (!mapOfCountsByFeedUrls.has(feedURL)) {
-      mapOfCountsByFeedUrls.set(feedURL, 0)
-    }
-    if (!mapOfCountsByChannels.has(channel)) {
-      mapOfCountsByChannels.set(channel, 0)
+    const feedURL = job.data.meta?.feedURL
+    const channel = job.data.meta?.channel
+
+
+    if (feedURL) {
+      if (!mapOfCountsByFeedUrls.has(feedURL)) {
+        mapOfCountsByFeedUrls.set(feedURL, 0)
+      }
+      mapOfCountsByFeedUrls.set(feedURL, mapOfCountsByFeedUrls.get(feedURL) + 1)
     }
 
-    mapOfCountsByFeedUrls.set(feedURL, mapOfCountsByFeedUrls.get(feedURL) + 1)
-    mapOfCountsByChannels.set(channel, mapOfCountsByChannels.get(channel) + 1)
+    if (channel) {
+      if (!mapOfCountsByChannels.has(channel)) {
+        mapOfCountsByChannels.set(channel, 0)
+      }
+      mapOfCountsByChannels.set(channel, mapOfCountsByChannels.get(channel) + 1)
+    }
   }
 
   const mapOfCountsByFeedUrlsSorted = [...mapOfCountsByFeedUrls.entries()].sort((a, b) => b[1] - a[1])
   const mapOfCountsByChannelsSorted = [...mapOfCountsByChannels.entries()].sort((a, b) => b[1] - a[1])
 
-  const top100FeedUrls = mapOfCountsByFeedUrlsSorted.slice(0, 100)
-  const top100Channels = mapOfCountsByChannelsSorted.slice(0, 100)
+  const topFeedUrls = mapOfCountsByFeedUrlsSorted.slice(0, 50)
+  const topChannels = mapOfCountsByChannelsSorted.slice(0, 50)
 
-  console.log('\n\nTop 100 Feed URLs:', top100FeedUrls)
-  console.log('\n\nTop 100 Channels:', top100Channels)
+  console.log('\n\nTop Feed URLs:', topFeedUrls)
+  console.log('\n\nTop Channels:', topChannels)
 
   process.exit()
 }).catch(err => {
