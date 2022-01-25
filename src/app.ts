@@ -32,6 +32,13 @@ setup().then((initializedData) => {
     requestTimeout: config.requestTimeout || 10000,
   }, config.concurrencyLimit || 6000)
 
+  producer.on('timeout', (jobData) => {
+    log.debug('Job timeout', jobData)
+    logDatadog('info', 'Job timeout', {
+      jobData
+    })
+  })
+
   producer.queue.on('completed', async (job, result: JobResponse<Record<string, unknown>>) => {
     log.debug('Job completed', result)
     logDatadog('info', `Article delivered`, {
@@ -54,7 +61,7 @@ setup().then((initializedData) => {
   })
 
   producer.queue.on('failed', async (job, error) => {
-    log.error(`Job failed: ${error.message}`)
+    log.error(`Job ${job.id} failed: ${error.message}`)
     if (!job.data.meta?.articleID) {
       return
     }
