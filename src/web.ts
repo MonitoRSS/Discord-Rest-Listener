@@ -20,9 +20,9 @@ createBullBoard({
 })
 
 const app = express()
-serverAdapter.setBasePath('/')
+serverAdapter.setBasePath('/admin')
 
-app.use('/', serverAdapter.getRouter())
+app.use('/admin', serverAdapter.getRouter())
 
 const port = config.httpPort
 
