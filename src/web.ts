@@ -8,9 +8,7 @@ import {
 import express from 'express'
 import config from "./utils/config"
 
-const queue = new Queue(REDIS_QUEUE_NAME, {
-    redis: config.redis
-})
+const queue = new Queue(REDIS_QUEUE_NAME, config.redis)
 
 const serverAdapter = new ExpressAdapter();
 
