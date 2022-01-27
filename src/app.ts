@@ -30,6 +30,7 @@ setup().then((initializedData) => {
     // Normally 50, but other apps are also making requests so we stay conservative
     maxRequestsPerSecond: config.maxRequestsPerSecond || 25,
     requestTimeout: config.requestTimeout || 10000,
+    invalidRequestsThreshold: 1000,
   }, config.concurrencyLimit || 6000)
 
   producer.on('timeout', (jobData) => {
