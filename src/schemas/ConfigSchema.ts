@@ -3,7 +3,6 @@ import * as z from 'zod'
 export const ConfigSchema = z.object({
   token: z.string(),
   databaseURI: z.string(),
-  httpPort: z.number(),
   maxRequestsPerSecond: z.number(),
   rabbitmqUri: z.string(),
   discordClientId: z.string(),

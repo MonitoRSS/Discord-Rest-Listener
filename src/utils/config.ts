@@ -4,7 +4,7 @@ import 'dotenv/config'
 const config = {
   token: process.env.TOKEN,
   databaseURI: process.env.DATABASE_URI,
-  maxRequestsPerSecond: process.env.MAX_REQUESTS_PER_SECOND,
+  maxRequestsPerSecond: Number(process.env.MAX_REQUESTS_PER_SECOND),
   rabbitmqUri: process.env.RABBITMQ_URI,
   discordClientId: process.env.DISCORD_CLIENT_ID,
   datadog: {
