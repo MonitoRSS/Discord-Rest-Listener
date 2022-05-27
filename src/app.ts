@@ -87,6 +87,8 @@ setup().then((initializedData) => {
     }
   })
 
+  return consumer.initialize()
+}).then(() => {
   log.info('Ready')
 }).catch(err => {
   log.error(err)
