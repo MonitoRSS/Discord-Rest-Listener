@@ -1,9 +1,19 @@
-import fs from 'fs'
-import path from 'path'
-import { ConfigSchema, ConfigType } from '../schemas/ConfigSchema'
-const configPath = path.join(__dirname, '..', '..', 'config.json')
-const config = JSON.parse(fs.readFileSync(configPath, 'utf-8')) as ConfigType
+import { ConfigSchema } from '../schemas/ConfigSchema'
+import 'dotenv/config'
 
-ConfigSchema.parse(config)
+const config = {
+  token: process.env.TOKEN,
+  databaseURI: process.env.DATABASE_URI,
+  maxRequestsPerSecond: process.env.MAX_REQUESTS_PER_SECOND,
+  rabbitmqUri: process.env.RABBITMQ_URI,
+  discordClientId: process.env.DISCORD_CLIENT_ID,
+  datadog: {
+    apiKey: process.env.DATADOG_API_KEY,
+    host: process.env.DATADOG_HOST,
+    service: process.env.DATADOG_SERVICE,
+  },
+}
 
-export default config
+const parsedConfig = ConfigSchema.parse(config)
+
+export default parsedConfig

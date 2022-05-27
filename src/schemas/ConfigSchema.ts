@@ -4,9 +4,7 @@ export const ConfigSchema = z.object({
   token: z.string(),
   databaseURI: z.string(),
   httpPort: z.number(),
-  concurrencyLimit: z.number(),
   maxRequestsPerSecond: z.number(),
-  requestTimeout: z.number(),
   rabbitmqUri: z.string(),
   discordClientId: z.string(),
   datadog: z.object({
