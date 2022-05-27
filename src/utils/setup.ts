@@ -6,10 +6,9 @@ import GeneralStat from "../entities/GeneralStat"
 // import RedisCache from "../services/RedisCache"
 import config from "./config"
 import log from "./log"
-import setupHealthCheck from "./setupHealthCheck"
 
 
-async function setup (withHealthCheck = true) {
+async function setup () {
   log.info('Connecting to Mongo')
   const orm = await MikroORM.init({
     entities: [DeliveryRecord, GeneralStat],
@@ -18,10 +17,6 @@ async function setup (withHealthCheck = true) {
     ensureIndexes: true
   })
   log.info('Connected to Mongo')
-  if (withHealthCheck) {
-    const healthCheckPort = await setupHealthCheck()
-    log.info(`Health check set up at HTTP port ${healthCheckPort}`)
-  }
   return {
     orm,
   }
