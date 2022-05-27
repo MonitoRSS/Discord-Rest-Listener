@@ -40,16 +40,21 @@ class DeliveryRecord {
   @Property()
   addedAt = new Date()
 
+  @Property({ nullable: true })
+  deliveryId?: string
+
   constructor(data: {
     articleID: string,
     feedURL: string,
     channel: string,
+    deliveryId: string
   }, delivered: boolean) {
-    const { articleID, channel, feedURL } = data
+    const { deliveryId, articleID, channel, feedURL } = data
     this.articleID = articleID
     this.feedURL = feedURL
     this.channel = channel
     this.delivered = delivered
+    this.deliveryId = deliveryId
   }
 }
 
