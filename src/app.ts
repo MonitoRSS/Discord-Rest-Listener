@@ -1,7 +1,7 @@
 import log, { logDatadog } from './utils/log'
 import setup from './utils/setup'
 import { MikroORM } from '@mikro-orm/core'
-import { RESTConsumer, JobResponse } from '@synzen/discord-rest'
+import { GLOBAL_BLOCK_TYPE, RESTConsumer } from '@synzen/discord-rest'
 import config from './utils/config'
 import DeliveryRecord from './entities/DeliveryRecord'
 import GeneralStat from './entities/GeneralStat'
@@ -26,77 +26,67 @@ const recordArticleFailure = async (orm: MikroORM, articleMeta: ArticleMeta, err
 
 setup().then((initializedData) => {
   const { orm } = initializedData
-  const producer = new RESTConsumer(config.redis, `Bot ${config.token}`, {
-    // Normally 50, but other apps are also making requests so we stay conservative
+  const consumer = new RESTConsumer(config.rabbitmqUri, {
+    authHeader: `Bot ${config.token}`,
+    clientId: config.discordClientId,
+  }, {
     maxRequestsPerSecond: config.maxRequestsPerSecond || 25,
-    requestTimeout: config.requestTimeout || 10000,
     invalidRequestsThreshold: 1000,
-  }, config.concurrencyLimit || 6000)
-
-  producer.on('timeout', (jobData) => {
-    log.debug('Job timeout', jobData)
-    logDatadog('info', 'Job timeout', {
-      jobData
-    })
   })
 
-  producer.queue.on('completed', async (job, result: JobResponse<Record<string, unknown>>) => {
+  consumer.on('jobCompleted', async (job, result, jobMetadata) => {
     log.debug('Job completed', result)
     logDatadog('info', `Article delivered`, {
-      route: job.data.route,
-      ...(job.finishedOn && { duration: job.finishedOn - job.timestamp }),
-      ...(job.data.meta?.feedURL && { feedURL: job.data.meta?.feedURL }),
+      route: job.route,
+      ...(jobMetadata.startTimestamp && { duration: jobMetadata.endTimestamp - jobMetadata.startTimestamp }),
+      ...(job.meta?.feedURL && { feedURL: job.meta?.feedURL }),
     })
     // This was a feed article
-    if (!job.data.meta?.articleID) {
+    if (!job.meta?.articleID) {
       return
     }
-    await recordArticleSuccess(orm, job.data.meta)
+    await recordArticleSuccess(orm, job.meta as ArticleMeta)
     if (!result.status.toString().startsWith('2')) {
-      await recordArticleFailure(orm, job.data.meta, `Bad status code (${result.status}) | ${JSON.stringify(result.body)}`)
+      await recordArticleFailure(orm, job.meta as ArticleMeta, `Bad status code (${result.status}) | ${JSON.stringify(result.body)}`)
     }
   })
 
-  producer.queue.on('drained', async () => {
-    log.debug('Queue drained')
-  })
-
-  producer.queue.on('failed', async (job, error) => {
+  consumer.on('jobError', async (error, job) => {
     log.error(`Job ${job.id} failed: ${error.message}`)
-    if (!job.data.meta?.articleID) {
+    if (!job.meta?.articleID) {
       return
     }
-    await recordArticleFailure(orm, job.data.meta, `Job failed: ${error.message}`)
+    await recordArticleFailure(orm, job.meta as ArticleMeta, `Job failed: ${error.message}`)
   })
 
   /**
    * Log all the important events that might affect this service's performance
    */
-  producer.handler.on('globalRateLimit', (apiRequest, durationMs) => {
-    const errorMessage = `Global rate limit hit for ${apiRequest.toString()} (retry after ${durationMs}ms)`
-    logDatadog('warn', errorMessage, {
-      apiRequest,
-      durationMs
-    })
-    log.warn(errorMessage)
+  consumer.on('globalBlock', (blockType, durationMs) => {
+    if (blockType === GLOBAL_BLOCK_TYPE.GLOBAL_RATE_LIMIT) {
+    const errorMessage = `Global rate limit hit (retry after ${durationMs}ms)`
+    
+      logDatadog('warn', errorMessage, {
+        durationMs
+      })
+      log.warn(errorMessage)
+    } else if (blockType === GLOBAL_BLOCK_TYPE.CLOUDFLARE_RATE_LIMIT) {
+      const errorMessage = `Cloudflare rate limit hit (retry after ${durationMs}ms)`
+
+      logDatadog('warn', errorMessage, {
+        durationMs
+      })
+      log.warn(errorMessage)
+    } else if (blockType === GLOBAL_BLOCK_TYPE.INVALID_REQUEST) {
+      const errorMessage = `Invalid requests threshold reached, delaying all requests by ${durationMs}ms`
+
+      logDatadog('warn', errorMessage, {
+        durationMs
+      })
+      log.warn(errorMessage)
+    }
   })
 
-  producer.handler.on('rateLimit', (apiRequest, durationMs) => {
-    log.warn(`Rate limit hit for ${apiRequest.toString()} (retry after ${durationMs})ms`)
-  })
-
-  producer.handler.on('invalidRequestsThreshold', (threshold) => {
-    log.warn(`${threshold} invalid requests reached, delaying all requests by 10 minutes`)
-  })
-
-  producer.handler.on('cloudflareRateLimit', (apiRequest, durationMs) => {
-    const errorMessage = `Cloudflare rate limit hit for ${apiRequest.toString()} (retry after ${durationMs})ms`
-    logDatadog('warn', errorMessage, {
-      apiRequest,
-      durationMs
-    })
-    log.warn(errorMessage)
-  })
   log.info('Ready')
 }).catch(err => {
   log.error(err)
