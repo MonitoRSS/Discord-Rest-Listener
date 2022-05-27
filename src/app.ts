@@ -35,6 +35,13 @@ setup().then(async (initializedData) => {
   const consumer = new RESTConsumer(config.rabbitmqUri, {
     authHeader: `Bot ${config.token}`,
     clientId: config.discordClientId,
+    checkIsDuplicate: async (deliveryId) => {
+      const count = await orm.em.count(DeliveryRecord, {
+        deliveryId,
+      })
+
+      return count > 0
+    }
   }, {
     maxRequestsPerSecond: config.maxRequestsPerSecond || 25,
     invalidRequestsThreshold: 1000,
