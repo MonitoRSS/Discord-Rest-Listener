@@ -5,7 +5,7 @@ import { ObjectId } from '@mikro-orm/mongodb'
   collection: 'delivery_records_service'
 })
 @Index({
-  properties: ['channel']
+  properties: ['channel', 'deliveryId']
 })
 @Index({
   properties: ['addedAt'],
