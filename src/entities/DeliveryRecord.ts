@@ -43,6 +43,9 @@ class DeliveryRecord {
   @Property()
   addedAt = new Date()
 
+  @Property({nullable: true})
+  feedId?: string
+
   @Property({ nullable: true })
   deliveryId?: string
 
@@ -54,15 +57,17 @@ class DeliveryRecord {
     feedURL: string,
     channel: string,
     deliveryId: string,
-    executionTimeSeconds: number
+    executionTimeSeconds: number,
+    feedId: string
   }, delivered: boolean) {
-    const { deliveryId, articleID, channel, feedURL, executionTimeSeconds } = data
+    const { deliveryId, articleID, channel, feedURL, executionTimeSeconds, feedId } = data
     this.articleID = articleID
     this.feedURL = feedURL
     this.channel = channel
     this.delivered = delivered
     this.deliveryId = deliveryId
     this.executionTimeSeconds = executionTimeSeconds
+    this.feedId = feedId
   }
 }
 

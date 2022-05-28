@@ -1,7 +1,7 @@
 import log, { logDatadog } from './utils/log'
 import setup from './utils/setup'
 import { MikroORM } from '@mikro-orm/core'
-import { GLOBAL_BLOCK_TYPE, RESTConsumer } from '@synzen/discord-rest'
+import { GLOBAL_BLOCK_TYPE, RESTConsumer, RESTProducer } from '@synzen/discord-rest'
 import config from './utils/config'
 import DeliveryRecord from './entities/DeliveryRecord'
 import GeneralStat from './entities/GeneralStat'
@@ -14,18 +14,21 @@ interface ArticleMeta {
   articleID: string
   feedURL: string
   channel: string
+  feedId: string
 }
 
 interface JobMeta {
   id: string
   duration: number
+  feedId: string
 }
 
 const recordArticleSuccess = async (orm: MikroORM, jobMeta: JobMeta, articleMeta: ArticleMeta) => {
   const record = new DeliveryRecord({
     ...articleMeta,
     deliveryId: jobMeta.id,
-    executionTimeSeconds: jobMeta.duration
+    executionTimeSeconds: jobMeta.duration,
+    feedId: jobMeta.feedId
   }, true)
   await orm.em.nativeInsert(record)
   await GeneralStat.increaseNumericStat(orm, GeneralStat.keys.ARTICLES_SENT)
@@ -35,14 +38,21 @@ const recordArticleFailure = async (orm: MikroORM, jobMeta: JobMeta, articleMeta
   const record = new DeliveryRecord({
     ...articleMeta,
     deliveryId: jobMeta.id,
-    executionTimeSeconds: jobMeta.duration
+    executionTimeSeconds: jobMeta.duration,
+    feedId: jobMeta.feedId
   }, false)
   record.comment = errorMessage
   await orm.em.nativeInsert(record)
+  orm.em.nativeUpdate('', {
+    ddd: 1,
+  }, {})
 }
 
 setup().then(async (initializedData) => {
   const { orm } = initializedData
+  const producer = new RESTProducer(config.rabbitmqUri, {
+    clientId: config.discordClientId,
+  })
   const consumer = new RESTConsumer(config.rabbitmqUri, {
     authHeader: `Bot ${config.token}`,
     clientId: config.discordClientId,
@@ -84,12 +94,14 @@ setup().then(async (initializedData) => {
       await recordArticleSuccess(orm, {
         id: job.id,
         duration: jobDuration,
+        feedId: job.meta.feedId
       }, job.meta as ArticleMeta)
 
       if (!result.status.toString().startsWith('2')) {
         await recordArticleFailure(orm, {
           id: job.id,
           duration: jobDuration,
+          feedId: job.meta.feedId
         }, job.meta as ArticleMeta, `Bad status code (${result.status}) | ${JSON.stringify(result.body)}`)
       }
     })
@@ -103,7 +115,8 @@ setup().then(async (initializedData) => {
       }
       await recordArticleFailure(orm, {
         id: job.id,
-        duration: jobDuration
+        duration: jobDuration,
+        feedId: job.meta.feedId
       }, job.meta as ArticleMeta, `Job error: ${error.message}`)
     })
 
