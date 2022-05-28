@@ -19,6 +19,7 @@
     "@synzen/discord-rest": "^0.6.26-beta.8",
     "dayjs": "^1.11.2",
     "dotenv": "^16.0.1",
+    "source-map-support": "^0.5.21",
     "winston": "^3.3.3",
     "zod": "^1.11.17"
   },

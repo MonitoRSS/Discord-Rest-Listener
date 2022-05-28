@@ -1,3 +1,4 @@
+import 'source-map-support/register'
 import log, { logDatadog } from './utils/log'
 import setup from './utils/setup'
 import { MikroORM } from '@mikro-orm/core'
