@@ -96,7 +96,7 @@ setup().then(async (initializedData) => {
 
     consumer.on('jobCompleted', async (job, result) => {
       log.debug('Job completed', result)
-      const jobDuration = dayjs().utc().unix() - job.startTimestamp
+      const jobDuration = dayjs().utc().valueOf() - job.startTimestamp
 
       logDatadog('info', `Article delivered`, {
         route: job.route,
@@ -145,7 +145,7 @@ setup().then(async (initializedData) => {
 
     consumer.on('jobError', async (error, job) => {
       log.error(`Job ${job.id} error: ${error.message}`)
-      const jobDuration = dayjs().utc().unix() - job.startTimestamp
+      const jobDuration = dayjs().utc().valueOf() - job.startTimestamp
 
       if (!job.meta?.articleID) {
         return
