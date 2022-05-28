@@ -7,6 +7,8 @@ import DeliveryRecord from './entities/DeliveryRecord'
 import GeneralStat from './entities/GeneralStat'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
+import { disableFeed, sendAlert } from './send-failure-notification'
+import { BAD_FORMAT } from './constants/feedDisableReasons'
 
 dayjs.extend(utc)
 
@@ -15,6 +17,7 @@ interface ArticleMeta {
   feedURL: string
   channel: string
   feedId: string
+  guildId: string
 }
 
 interface JobMeta {
@@ -24,34 +27,47 @@ interface JobMeta {
 }
 
 const recordArticleSuccess = async (orm: MikroORM, jobMeta: JobMeta, articleMeta: ArticleMeta) => {
-  const record = new DeliveryRecord({
-    ...articleMeta,
-    deliveryId: jobMeta.id,
-    executionTimeSeconds: jobMeta.duration,
-    feedId: jobMeta.feedId
-  }, true)
-  await orm.em.nativeInsert(record)
-  await GeneralStat.increaseNumericStat(orm, GeneralStat.keys.ARTICLES_SENT)
+  try {
+    const record = new DeliveryRecord({
+      ...articleMeta,
+      deliveryId: jobMeta.id,
+      executionTimeSeconds: jobMeta.duration,
+      feedId: jobMeta.feedId
+    }, true)
+    await orm.em.nativeInsert(record)
+    await GeneralStat.increaseNumericStat(orm, GeneralStat.keys.ARTICLES_SENT)
+  } catch (err) {
+    const errMessage = `Failed to record article success (${(err as Error).message})`
+    log.error(errMessage)
+    logDatadog('error', errMessage, {
+      stack: (err as Error).stack
+    })
+  }
 }
 
 const recordArticleFailure = async (orm: MikroORM, jobMeta: JobMeta, articleMeta: ArticleMeta, errorMessage: string) => {
-  const record = new DeliveryRecord({
-    ...articleMeta,
-    deliveryId: jobMeta.id,
-    executionTimeSeconds: jobMeta.duration,
-    feedId: jobMeta.feedId
-  }, false)
-  record.comment = errorMessage
-  await orm.em.nativeInsert(record)
-  orm.em.nativeUpdate('', {
-    ddd: 1,
-  }, {})
+  try {
+    const record = new DeliveryRecord({
+      ...articleMeta,
+      deliveryId: jobMeta.id,
+      executionTimeSeconds: jobMeta.duration,
+      feedId: jobMeta.feedId
+    }, false)
+    record.comment = errorMessage
+    await orm.em.nativeInsert(record)
+  } catch (err) {
+    const errMessage = `Failed to record article failure (${(err as Error).message})`
+    log.error(errMessage)
+    logDatadog('error', errMessage, {
+      stack: (err as Error).stack
+    })
+  }
 }
 
 setup().then(async (initializedData) => {
   const { orm } = initializedData
   const producer = new RESTProducer(config.rabbitmqUri, {
-    clientId: config.discordClientId,
+    clientId: config.discordClientId
   })
   const consumer = new RESTConsumer(config.rabbitmqUri, {
     authHeader: `Bot ${config.token}`,
@@ -91,18 +107,38 @@ setup().then(async (initializedData) => {
         return
       }
 
-      await recordArticleSuccess(orm, {
-        id: job.id,
-        duration: jobDuration,
-        feedId: job.meta.feedId
-      }, job.meta as ArticleMeta)
-
-      if (!result.status.toString().startsWith('2')) {
-        await recordArticleFailure(orm, {
+      try {
+        await recordArticleSuccess(orm, {
           id: job.id,
           duration: jobDuration,
           feedId: job.meta.feedId
-        }, job.meta as ArticleMeta, `Bad status code (${result.status}) | ${JSON.stringify(result.body)}`)
+        }, job.meta as ArticleMeta)
+
+        if (!result.status.toString().startsWith('2')) {
+          await recordArticleFailure(orm, {
+            id: job.id,
+            duration: jobDuration,
+            feedId: job.meta.feedId
+          }, job.meta as ArticleMeta, `Bad status code (${result.status}) | ${JSON.stringify(result.body)}`)
+
+          if (result.status === 400) {
+            await disableFeed(orm, job.meta.feedId, BAD_FORMAT)
+            const userFormattedMessage = BAD_FORMAT + ` (URL ${job.meta.feedURL} in channel <#${job.meta.channel}>)`
+            await sendAlert({
+              orm,
+              producer,
+              channelId: job.meta.channel,
+              errorMessage: userFormattedMessage,
+              guildId: job.meta.guildId
+            })
+          }
+        }
+      } catch (err) {
+        const errMessage = `Failed to handle job completed: ${(err as Error).message}`
+        log.error(errMessage)
+        logDatadog('error', errMessage, {
+          stack: (err as Error).stack
+        })
       }
     })
 
@@ -148,6 +184,7 @@ setup().then(async (initializedData) => {
       }
     })
 
+    await producer.initialize()
     await consumer.initialize()
 
     log.info('Ready')
