@@ -76,14 +76,16 @@ setup().then(async (initializedData) => {
         duration: jobDuration,
         ...(job.meta?.feedURL && { feedURL: job.meta?.feedURL }),
       })
-      // This was a feed article
+
       if (!job.meta?.articleID) {
         return
       }
+
       await recordArticleSuccess(orm, {
         id: job.id,
         duration: jobDuration,
       }, job.meta as ArticleMeta)
+
       if (!result.status.toString().startsWith('2')) {
         await recordArticleFailure(orm, {
           id: job.id,
