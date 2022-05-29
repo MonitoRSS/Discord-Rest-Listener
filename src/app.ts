@@ -95,14 +95,25 @@ setup().then(async (initializedData) => {
     })
 
     consumer.on('jobCompleted', async (job, result) => {
-      log.debug('Job completed', result)
       const jobDuration = dayjs().utc().valueOf() - job.startTimestamp
-
-      logDatadog('info', `Article delivered`, {
+      
+      const meta = {
         route: job.route,
         duration: jobDuration,
         ...(job.meta?.feedURL && { feedURL: job.meta?.feedURL }),
-      })
+      }
+
+      if (result.status >= 200 && result.status < 300) {
+        log.debug(`Article delivered`, result)
+        logDatadog('info', `Article delivered`, meta)
+      } else {
+        log.debug(`Article delivery failed`, result)
+        logDatadog('warn', `Article delivery failed`, {
+          ...meta,
+          status: result.status,
+          body: result.body
+        })
+      }
 
       if (!job.meta?.articleID) {
         return
@@ -115,7 +126,7 @@ setup().then(async (initializedData) => {
           feedId: job.meta.feedId
         }, job.meta as ArticleMeta)
 
-        if (!result.status.toString().startsWith('2')) {
+        if (result.status > 300) {
           await recordArticleFailure(orm, {
             id: job.id,
             duration: jobDuration,
