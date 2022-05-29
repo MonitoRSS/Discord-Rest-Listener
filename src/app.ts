@@ -144,7 +144,11 @@ setup().then(async (initializedData) => {
     })
 
     consumer.on('jobError', async (error, job) => {
+      const errorMessage = `Failed to process job ${job.id}: ${error.message}`
       log.error(`Job ${job.id} error: ${error.message}`)
+      logDatadog('error', errorMessage, {
+        stack: (error as Error).stack
+      })
       const jobDuration = dayjs().utc().valueOf() - job.startTimestamp
 
       if (!job.meta?.articleID) {
