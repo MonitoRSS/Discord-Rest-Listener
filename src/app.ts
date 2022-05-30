@@ -2,7 +2,7 @@ import 'source-map-support/register'
 import log, { logDatadog } from './utils/log'
 import setup from './utils/setup'
 import { MikroORM } from '@mikro-orm/core'
-import { GLOBAL_BLOCK_TYPE, RESTConsumer, RESTProducer } from '@synzen/discord-rest'
+import { GLOBAL_BLOCK_TYPE, RequestTimeoutError, RESTConsumer, RESTProducer } from '@synzen/discord-rest'
 import config from './utils/config'
 import DeliveryRecord from './entities/DeliveryRecord'
 import GeneralStat from './entities/GeneralStat'
@@ -168,9 +168,13 @@ setup().then(async (initializedData) => {
 
     consumer.on('jobError', async (error, job) => {
       const errorMessage = `Failed to process job ${job.id}: ${error.message}`
-      log.error(`Job ${job.id} error: ${error.message}`)
+      const debugHistory = error instanceof RequestTimeoutError ? error.debugHistory : []
+      log.error(`Job ${job.id} error: ${error.message}`, {
+        debugHistory
+      })
       logDatadog('error', errorMessage, {
-        stack: (error as Error).stack
+        stack: (error as Error).stack,
+        debugHistory,
       })
       const jobDuration = dayjs().utc().valueOf() - job.startTimestamp
 
