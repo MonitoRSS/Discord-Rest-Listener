@@ -94,8 +94,14 @@ setup().then(async (initializedData) => {
       })
     })
 
-    consumer.on('longRunningRequest', details => {
-      const message = `Long running request detected`
+    consumer.on('LongRunningBucketRequest', details => {
+      const message = `Long running bucket request detected`
+      log.warn(message, details)
+      logDatadog('warn', message, details)
+    })
+
+    consumer.on('LongRunningHandlerRequest', details => {
+      const message = `Long running handler request detected`
       log.warn(message, details)
       logDatadog('warn', message, details)
     })
