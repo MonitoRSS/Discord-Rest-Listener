@@ -168,7 +168,7 @@ setup().then(async (initializedData) => {
 
     consumer.on('jobError', async (error, job) => {
       const errorMessage = `Failed to process job ${job.id}: ${error.message}`
-      const debugHistory = error instanceof RequestTimeoutError ? error.debugHistory : []
+      const debugHistory = (error as RequestTimeoutError).debugHistory || ['no-debug-history']
       log.error(`Job ${job.id} error: ${error.message}`, {
         debugHistory
       })
