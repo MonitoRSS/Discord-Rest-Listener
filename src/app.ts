@@ -94,6 +94,12 @@ setup().then(async (initializedData) => {
       })
     })
 
+    consumer.on('longRunningRequest', details => {
+      const message = `Long running request detected`
+      log.warn(message, details)
+      logDatadog('warn', message, details)
+    })
+
     consumer.on('jobCompleted', async (job, result) => {
       const jobDuration = dayjs().utc().valueOf() - job.startTimestamp
       
