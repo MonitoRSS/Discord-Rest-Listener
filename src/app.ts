@@ -73,7 +73,7 @@ setup().then(async (initializedData) => {
   const consumer = new RESTConsumer(config.rabbitmqUri, {
     authHeader: `Bot ${config.token}`,
     clientId: config.discordClientId,
-    rejectJobsAfterDurationMs: 1000 * 60 * 10,
+    rejectJobsAfterDurationMs: 1000 * 60 * 15,
     checkIsDuplicate: async (deliveryId) => {
       const count = await orm.em.count(DeliveryRecord, {
         deliveryId,
