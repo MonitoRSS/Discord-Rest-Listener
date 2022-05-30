@@ -94,6 +94,13 @@ setup().then(async (initializedData) => {
       })
     })
 
+    consumer.on('next', (queueSize, pending) => {
+      logDatadog('info', `Job completed, moving to next (queueSize: ${queueSize}, pending: ${pending})`, {
+        queueSize,
+        pending
+      })
+    })
+
     consumer.on('LongRunningBucketRequest', details => {
       const message = `Long running bucket request detected`
       log.warn(message, details)
