@@ -16,7 +16,7 @@
     "@bull-board/express": "^3.9.1",
     "@mikro-orm/core": "^4.5.5",
     "@mikro-orm/mongodb": "^4.5.5",
-    "@synzen/discord-rest": "^0.6.26-beta.26",
+    "@synzen/discord-rest": "^0.6.26-beta.25",
     "dayjs": "^1.11.2",
     "dotenv": "^16.0.1",
     "source-map-support": "^0.5.21",
