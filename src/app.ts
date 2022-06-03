@@ -201,21 +201,28 @@ setup().then(async (initializedData) => {
      */
     consumer.on('globalBlock', (blockType, durationMs) => {
       if (blockType === GLOBAL_BLOCK_TYPE.GLOBAL_RATE_LIMIT) {
-      const errorMessage = `Global rate limit hit (retry after ${durationMs}ms)`
+      const errorMessage = `Global block: Global rate limit hit (retry after ${durationMs}ms)`
       
         logDatadog('warn', errorMessage, {
           durationMs
         })
         log.warn(errorMessage)
       } else if (blockType === GLOBAL_BLOCK_TYPE.CLOUDFLARE_RATE_LIMIT) {
-        const errorMessage = `Cloudflare rate limit hit (retry after ${durationMs}ms)`
+        const errorMessage = `Global block: Cloudflare rate limit hit (retry after ${durationMs}ms)`
 
         logDatadog('warn', errorMessage, {
           durationMs
         })
         log.warn(errorMessage)
       } else if (blockType === GLOBAL_BLOCK_TYPE.INVALID_REQUEST) {
-        const errorMessage = `Invalid requests threshold reached, delaying all requests by ${durationMs}ms`
+        const errorMessage = `Global block: Invalid requests threshold reached, delaying all requests by ${durationMs}ms`
+
+        logDatadog('warn', errorMessage, {
+          durationMs
+        })
+        log.warn(errorMessage)
+      } else {
+        const errorMessage = `Global block: type ${blockType}, delaying all requests by ${durationMs}ms`
 
         logDatadog('warn', errorMessage, {
           durationMs
