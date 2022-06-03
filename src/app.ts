@@ -83,7 +83,7 @@ setup().then(async (initializedData) => {
     }
   }, {
     maxRequestsPerSecond: config.maxRequestsPerSecond || 25,
-    invalidRequestsThreshold: 1000,
+    invalidRequestsThreshold: 5000,
   })
 
   try {
