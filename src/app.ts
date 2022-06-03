@@ -114,6 +114,16 @@ setup().then(async (initializedData) => {
       logDatadog('warn', message, details)
     })
 
+    consumer.on('idle', () => {
+      log.info('Consumer is idle')
+      logDatadog('info', 'Consumer is idle')
+    })
+
+    consumer.on('active', () => {
+      log.info('Consumer is active')
+      logDatadog('info', 'Consumer is active')
+    })
+
     consumer.on('jobCompleted', async (job, result) => {
       const jobDuration = dayjs().utc().valueOf() - job.startTimestamp
       
