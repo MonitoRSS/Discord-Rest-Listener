@@ -209,36 +209,24 @@ setup().then(async (initializedData) => {
     /**
      * Log all the important events that might affect this service's performance
      */
-    consumer.on('globalBlock', (blockType, durationMs) => {
-      if (blockType === GLOBAL_BLOCK_TYPE.GLOBAL_RATE_LIMIT) {
-      const errorMessage = `Global block: Global rate limit hit (retry after ${durationMs}ms)`
+    consumer.on('globalBlock', (blockType, durationMs, debugDetails) => {
+      let errorMessage: string
       
-        logDatadog('warn', errorMessage, {
-          durationMs
-        })
-        log.warn(errorMessage)
+      if (blockType === GLOBAL_BLOCK_TYPE.GLOBAL_RATE_LIMIT) {
+        errorMessage = `Global block: Global rate limit hit (retry after ${durationMs}ms)`
       } else if (blockType === GLOBAL_BLOCK_TYPE.CLOUDFLARE_RATE_LIMIT) {
-        const errorMessage = `Global block: Cloudflare rate limit hit (retry after ${durationMs}ms)`
-
-        logDatadog('warn', errorMessage, {
-          durationMs
-        })
-        log.warn(errorMessage)
+        errorMessage = `Global block: Cloudflare rate limit hit (retry after ${durationMs}ms)`
       } else if (blockType === GLOBAL_BLOCK_TYPE.INVALID_REQUEST) {
-        const errorMessage = `Global block: Invalid requests threshold reached, delaying all requests by ${durationMs}ms`
-
-        logDatadog('warn', errorMessage, {
-          durationMs
-        })
-        log.warn(errorMessage)
+        errorMessage = `Global block: Invalid requests threshold reached, delaying all requests by ${durationMs}ms`
       } else {
-        const errorMessage = `Global block: type ${blockType}, delaying all requests by ${durationMs}ms`
-
-        logDatadog('warn', errorMessage, {
-          durationMs
-        })
-        log.warn(errorMessage)
+        errorMessage = `Global block: type ${blockType}, delaying all requests by ${durationMs}ms`
       }
+
+      logDatadog('warn', errorMessage, {
+        durationMs,
+        debugDetails
+      })
+      log.warn(errorMessage)
     })
 
     await producer.initialize()
