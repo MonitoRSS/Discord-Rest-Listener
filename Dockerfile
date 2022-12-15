@@ -12,14 +12,15 @@ COPY . ./
 
 RUN npm run build
 
-RUN npm prune --production
-
-FROM node:16-alpine
+FROM node:16-alpine AS prod
 
 WORKDIR /usr/src/app
 
 COPY --from=build /usr/src/app/package*.json ./
 COPY --from=build /usr/src/app/node_modules node_modules
 COPY --from=build /usr/src/app/build build
+
+
+RUN npm prune --production
 
 CMD [ "node", "./build/app" ]
