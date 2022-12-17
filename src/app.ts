@@ -10,6 +10,7 @@ import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import { disableFeed, sendAlert } from './send-failure-notification'
 import { BAD_FORMAT } from './constants/feedDisableReasons'
+import { AmqpChannel } from './constants/amqpChannels'
 
 dayjs.extend(utc)
 
@@ -66,7 +67,7 @@ const recordArticleFailure = async (orm: MikroORM, jobMeta: JobMeta, articleMeta
 }
 
 setup().then(async (initializedData) => {
-  const { orm } = initializedData
+  const { orm, amqpChannelWrapper } = initializedData
   const producer = new RESTProducer(config.rabbitmqUri, {
     clientId: config.discordClientId
   })
@@ -131,6 +132,20 @@ setup().then(async (initializedData) => {
         route: job.route,
         duration: jobDuration,
         ...(job.meta?.feedURL && { feedURL: job.meta?.feedURL }),
+      }
+
+      try {
+        await amqpChannelWrapper.sendToQueue(AmqpChannel.FeedArticleDeliveryResult, Buffer.from(JSON.stringify({
+          job,
+          result,
+        })), {
+          persistent: true,
+        })
+      } catch (err) {
+        log.debug(`Failed to send feed delivery result to queue`, err)
+        logDatadog('error', `Failed to send feed delivery result to queue`, {
+          stack: (err as Error).stack
+        })
       }
 
       if (result.status >= 200 && result.status < 300) {
